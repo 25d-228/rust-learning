@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roadmap — A Durable Partitioned Event Broker · Rust Systems Engineering</title>
+<meta name="description" content="Build a single-machine event broker with segmented storage, explicit delivery semantics, bounded resource ownership, crash recovery, and measured performance.">
+<link rel="canonical" href="https://25d-228.github.io/rust-learning/index.html">
+<link rel="stylesheet" href="assets/code-light.css">
+<link rel="stylesheet" href="assets/course.css">
+<script>window.MathJax = {startup: {typeset: false}, options: {enableMenu: false}, svg: {fontCache: "local"}};</script>
+<script defer src="assets/vendor/tex-svg.js"></script>
+<script defer src="assets/course.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to chapter</a>
+<header class="topbar"><a class="brand" href="index.html"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M14 7C10 3 5 4 2 5v17c4-2 8-1 12 2m0-17c4-4 9-3 12-2v17c-4-2-8-1-12 2V7Z"/></svg><span>Rust Systems Engineering</span></a>
+<div class="header-actions"><a class="desktop-link" href="index.html">Overview</a><a class="desktop-link" href="chapter-01.html">Chapters</a><a class="desktop-link" href="https://github.com/25d-228/rust-learning">Repository</a><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="chapter-nav">Contents</button></div></header>
+<div class="book-layout">
+<aside class="sidebar" id="chapter-nav"><h2 class="sidebar-title">Contents</h2>
+<label for="chapter-filter">Find a chapter</label><input id="chapter-filter" type="search" placeholder="Search chapter titles…" autocomplete="off">
+<nav aria-label="Chapters"><ol><li><a href="index.html" aria-current="page"><span class="chapter-label">Roadmap</span><span>A Durable Partitioned Event Broker</span></a></li><li><a href="chapter-01.html"><span class="chapter-label">Chapter 1</span><span>Native workspace, modules, and executable checks</span></a></li><li><a href="chapter-02.html"><span class="chapter-label">Chapter 2</span><span>Ownership, borrowing, and lifetime-bound views</span></a></li><li><a href="chapter-03.html"><span class="chapter-label">Chapter 3</span><span>Enums, fallible parsing, and composed errors</span></a></li><li><a href="chapter-04.html"><span class="chapter-label">Chapter 4</span><span>Traits, generics, iterators, and bounded collections</span></a></li><li><a href="chapter-05.html"><span class="chapter-label">Chapter 5</span><span>Shared ownership, threads, and synchronization</span></a></li><li><a href="chapter-06.html"><span class="chapter-label">Chapter 6</span><span>Futures, async ownership, and cancellation</span></a></li><li><a href="chapter-07.html"><span class="chapter-label">Chapter 7, Part 1</span><span>Record bytes and typed identities</span></a></li><li><a href="chapter-07-part-02.html"><span class="chapter-label">Chapter 7, Part 2</span><span>File I/O and directory ownership</span></a></li><li><a href="chapter-08.html"><span class="chapter-label">Chapter 8, Part 1</span><span>Segments and sparse record lookup</span></a></li><li><a href="chapter-08-part-02.html"><span class="chapter-label">Chapter 8, Part 2</span><span>Rotation, bounded reads, and storage checks</span></a></li><li><a href="chapter-09.html"><span class="chapter-label">Chapter 9, Part 1</span><span>Dirty-file synchronization and timed mailboxes</span></a></li><li><a href="chapter-09-part-02.html"><span class="chapter-label">Chapter 9, Part 2</span><span>Owned commands and synchronized publication</span></a></li><li><a href="chapter-09-part-03.html"><span class="chapter-label">Chapter 9, Part 3</span><span>Controlled failures and four-partition checks</span></a></li><li><a href="chapter-10.html"><span class="chapter-label">Chapter 10, Part 1</span><span>Validate before repairing</span></a></li><li><a href="chapter-10-part-02.html"><span class="chapter-label">Chapter 10, Part 2</span><span>Publish the startup epoch</span></a></li><li><a href="chapter-10-part-03.html"><span class="chapter-label">Chapter 10, Part 3</span><span>Recovery fixtures and a process interruption</span></a></li><li><a href="chapter-11.html"><span class="chapter-label">Chapter 11, Part 1</span><span>A window that cannot advance through a gap</span></a></li><li><a href="chapter-11-part-02.html"><span class="chapter-label">Chapter 11, Part 2</span><span>Delivery on the partition owner</span></a></li><li><a href="chapter-11-part-03.html"><span class="chapter-label">Chapter 11, Part 3</span><span>Completion orders, bounded reads, and restart checks</span></a></li><li><a href="chapter-12.html"><span class="chapter-label">Chapter 12, Part 1</span><span>Attempts, deadlines, and a bounded retry window</span></a></li><li><a href="chapter-12-part-02.html"><span class="chapter-label">Chapter 12, Part 2</span><span>Clocked reads and owner integration</span></a></li><li><a href="chapter-12-part-03.html"><span class="chapter-label">Chapter 12, Part 3</span><span>Deterministic expiry and restart checks</span></a></li><li><a href="chapter-13.html"><span class="chapter-label">Chapter 13, Part 1</span><span>Checkpoint bytes and validated startup</span></a></li><li><a href="chapter-13-part-02.html"><span class="chapter-label">Chapter 13, Part 2</span><span>Accepted completion and checkpointed progress</span></a></li><li><a href="chapter-13-part-03.html"><span class="chapter-label">Chapter 13, Part 3</span><span>Publication cuts and repeat ranges</span></a></li><li><a href="chapter-14.html"><span class="chapter-label">Chapter 14, Part 1</span><span>Disk reservations and retained-floor metadata</span></a></li><li><a href="chapter-14-part-02.html"><span class="chapter-label">Chapter 14, Part 2</span><span>Segment reclamation and restart reconstruction</span></a></li><li><a href="chapter-14-part-03.html"><span class="chapter-label">Chapter 14, Part 3</span><span>Owner integration and a pressure trace</span></a></li><li><a href="chapter-14-part-04.html"><span class="chapter-label">Chapter 14, Part 4</span><span>Failure cuts and recovery checks</span></a></li><li><a href="chapter-15.html"><span class="chapter-label">Chapter 15, Part 1</span><span>Capacity-owned buffers and reserved lanes</span></a></li><li><a href="chapter-15-part-02.html"><span class="chapter-label">Chapter 15, Part 2</span><span>Bounded storage copies and owner integration</span></a></li><li><a href="chapter-15-part-03.html"><span class="chapter-label">Chapter 15, Part 3</span><span>Asynchronous admission and an owned response</span></a></li><li><a href="chapter-15-part-04.html"><span class="chapter-label">Chapter 15, Part 4</span><span>Pressure, cancellation, and executable checks</span></a></li><li><a href="chapter-16.html"><span class="chapter-label">Chapter 16, Part 1</span><span>Wire bytes and bounded frame decoding</span></a></li><li><a href="chapter-16-part-02.html"><span class="chapter-label">Chapter 16, Part 2</span><span>Sessions that retain resource ownership</span></a></li><li><a href="chapter-16-part-03.html"><span class="chapter-label">Chapter 16, Part 3</span><span>Cancellation-safe clients and loopback commands</span></a></li><li><a href="chapter-16-part-04.html"><span class="chapter-label">Chapter 16, Part 4</span><span>Fragmentation, slow peers, and ambiguity checks</span></a></li><li><a href="chapter-17.html"><span class="chapter-label">Chapter 17, Part 1</span><span>Admission closure and the final owner barrier</span></a></li><li><a href="chapter-17-part-02.html"><span class="chapter-label">Chapter 17, Part 2</span><span>A supervisor that retains its children</span></a></li><li><a href="chapter-17-part-03.html"><span class="chapter-label">Chapter 17, Part 3</span><span>Sessions, commands, and a joined restart</span></a></li><li><a href="chapter-17-part-04.html"><span class="chapter-label">Chapter 17, Part 4</span><span>Controlled shutdown and failure checks</span></a></li><li><a href="chapter-18.html"><span class="chapter-label">Chapter 18, Part 1</span><span>A small reference state for composed failures</span></a></li><li><a href="chapter-18-part-02.html"><span class="chapter-label">Chapter 18, Part 2</span><span>Reproducible owner schedules</span></a></li><li><a href="chapter-18-part-03.html"><span class="chapter-label">Chapter 18, Part 3</span><span>Publication and deletion cuts</span></a></li><li><a href="chapter-18-part-04.html"><span class="chapter-label">Chapter 18, Part 4</span><span>Interrupting recovery again</span></a></li><li><a href="chapter-19.html"><span class="chapter-label">Chapter 19, Part 1</span><span>External expectations and fresh recovery coverage</span></a></li><li><a href="chapter-19-part-02.html"><span class="chapter-label">Chapter 19, Part 2</span><span>Owned child processes and controlled interruption</span></a></li><li><a href="chapter-19-part-03.html"><span class="chapter-label">Chapter 19, Part 3</span><span>Coverage, overload, and safe reclamation</span></a></li><li><a href="chapter-19-part-04.html"><span class="chapter-label">Chapter 19, Part 4</span><span>Executable scenarios and checker counterexamples</span></a></li><li><a href="chapter-20.html"><span class="chapter-label">Chapter 20, Part 1</span><span>Bounded distributions and explicit observation boundaries</span></a></li><li><a href="chapter-20-part-02.html"><span class="chapter-label">Chapter 20, Part 2</span><span>Finite workloads and the index-density candidate</span></a></li><li><a href="chapter-20-part-03.html"><span class="chapter-label">Chapter 20, Part 3</span><span>Recovery, resource sampling, and comparable runs</span></a></li><li><a href="chapter-20-part-04.html"><span class="chapter-label">Chapter 20, Part 4</span><span>Regression checks and the retain-or-revert decision</span></a></li></ol></nav>
+<p class="sidebar-note">Build a single-machine event broker with segmented storage, explicit delivery semantics, bounded resource ownership, crash recovery, and measured performance.</p></aside>
+<main id="main-content" tabindex="-1">
+<div class="breadcrumb"><a href="index.html">Rust Systems Engineering</a><span aria-hidden="true">/</span><span>Roadmap</span></div>
+<div class="page-actions"><a href="https://github.com/25d-228/rust-learning/issues/1">Read on GitHub</a><a href="source/roadmap.md">Markdown</a></div>
+<details class="mobile-toc"><summary>In this chapter</summary><ul><li class="toc-h2"><a href="#the-software-and-its-boundaries">The software and its boundaries</a></li><li class="toc-h3"><a href="#ordering-success-and-ambiguous-outcomes">Ordering, success, and ambiguous outcomes</a></li><li class="toc-h3"><a href="#failure-model">Failure model</a></li><li class="toc-h2"><a href="#architecture-ownership-follows-the-state">Architecture: ownership follows the state</a></li><li class="toc-h3"><a href="#four-different-offsets">Four different offsets</a></li><li class="toc-h3"><a href="#leases-restart-epochs-and-progress">Leases, restart epochs, and progress</a></li><li class="toc-h3"><a href="#resource-limits-are-part-of-the-algorithm">Resource limits are part of the algorithm</a></li><li class="toc-h2"><a href="#starting-knowledge-and-native-environment">Starting knowledge and native environment</a></li><li class="toc-h2"><a href="#the-implementation-workspace">The implementation workspace</a></li><li class="toc-h2"><a href="#implementation-plan-and-hours">Implementation plan and hours</a></li><li class="toc-h2"><a href="#part-1-rust-before-the-broker">Part 1 — Rust before the broker</a></li><li class="toc-h3"><a href="#chapter-1-native-workspace-modules-and-executable-checks">Chapter 1 — Native workspace, modules, and executable checks</a></li><li class="toc-h3"><a href="#chapter-2-ownership-borrowing-and-lifetime-bound-views">Chapter 2 — Ownership, borrowing, and lifetime-bound views</a></li><li class="toc-h3"><a href="#chapter-3-enums-fallible-parsing-and-composed-errors">Chapter 3 — Enums, fallible parsing, and composed errors</a></li><li class="toc-h3"><a href="#chapter-4-traits-generics-iterators-and-bounded-collections">Chapter 4 — Traits, generics, iterators, and bounded collections</a></li><li class="toc-h3"><a href="#chapter-5-shared-ownership-threads-and-synchronization">Chapter 5 — Shared ownership, threads, and synchronization</a></li><li class="toc-h3"><a href="#chapter-6-futures-async-ownership-and-cancellation">Chapter 6 — Futures, async ownership, and cancellation</a></li><li class="toc-h2"><a href="#part-2-authoritative-storage">Part 2 — Authoritative storage</a></li><li class="toc-h3"><a href="#chapter-7-record-format-typed-offsets-and-the-io-boundary">Chapter 7 — Record format, typed offsets, and the I/O boundary</a></li><li class="toc-h3"><a href="#chapter-8-segments-sparse-indexing-and-bounded-reads">Chapter 8 — Segments, sparse indexing, and bounded reads</a></li><li class="toc-h3"><a href="#chapter-9-partition-owners-and-synchronized-group-commit">Chapter 9 — Partition owners and synchronized group commit</a></li><li class="toc-h3"><a href="#chapter-10-recovery-metadata-publication-and-restart-epochs">Chapter 10 — Recovery, metadata publication, and restart epochs</a></li><li class="toc-h2"><a href="#part-3-delivery-progress-and-reclamation">Part 3 — Delivery, progress, and reclamation</a></li><li class="toc-h3"><a href="#chapter-11-bounded-delivery-and-out-of-order-completion">Chapter 11 — Bounded delivery and out-of-order completion</a></li><li class="toc-h3"><a href="#chapter-12-lease-expiration-retries-and-stale-token-fencing">Chapter 12 — Lease expiration, retries, and stale-token fencing</a></li><li class="toc-h3"><a href="#chapter-13-durable-consumer-progress">Chapter 13 — Durable consumer progress</a></li><li class="toc-h3"><a href="#chapter-14-safe-retention-and-disk-admission">Chapter 14 — Safe retention and disk admission</a></li><li class="toc-h2"><a href="#part-4-bounded-asynchronous-service">Part 4 — Bounded asynchronous service</a></li><li class="toc-h3"><a href="#chapter-15-byte-budgets-and-pressure-safe-admission">Chapter 15 — Byte budgets and pressure-safe admission</a></li><li class="toc-h3"><a href="#chapter-16-framed-tcp-sessions-and-clients">Chapter 16 — Framed TCP sessions and clients</a></li><li class="toc-h3"><a href="#chapter-17-cancellation-boundaries-and-supervised-shutdown">Chapter 17 — Cancellation boundaries and supervised shutdown</a></li><li class="toc-h2"><a href="#part-5-failure-evidence-and-measured-behavior">Part 5 — Failure evidence and measured behavior</a></li><li class="toc-h3"><a href="#chapter-18-deterministic-failure-schedules-and-recovery-checks">Chapter 18 — Deterministic failure schedules and recovery checks</a></li><li class="toc-h3"><a href="#chapter-19-end-to-end-coverage-and-overload-demonstration">Chapter 19 — End-to-end coverage and overload demonstration</a></li><li class="toc-h3"><a href="#chapter-20-resource-measurement-and-one-justified-optimization">Chapter 20 — Resource measurement and one justified optimization</a></li><li class="toc-h2"><a href="#the-final-demonstration">The final demonstration</a></li></ul></details>
+<p id="math-status" hidden>Some mathematics could not be rendered. The original notation remains visible.</p>
+<article><h1 id="a-durable-partitioned-event-broker">A Durable Partitioned Event Broker</h1>
+<p>This book builds a Rust broker that accepts records, stores them in partitioned logs, and delivers them independently to two consumer groups. Its central problem is not forwarding messages. It is keeping storage order, delivery attempts, consumer progress, resource ownership, and restart behavior consistent when operations overlap or fail.</p>
+<p>The finished system has one process, one data directory, one topic, and four fixed partitions. Each partition has a dedicated owner thread. Asynchronous connections communicate with those owners through bounded mailboxes. Consumers may finish work out of order, disappear while holding deliveries, or reconnect after a broker restart. The broker must preserve confirmed records until they are safe to reclaim, reject obsolete delivery tokens, and stop accepting data rather than exhaust its configured budgets.</p>
+<blockquote>
+<p><strong>Learning objectives</strong>
+Implement the mechanisms that connect Rust's ownership model to persistent and concurrent state: checked binary formats, segmented storage and indexes, synchronization boundaries, bounded delivery windows, lease fencing, crash-safe progress, retention, admission, and shutdown. Explain the behavior with executable traces and measurements, not just a successful happy-path run.</p>
+</blockquote>
+<h2 id="the-software-and-its-boundaries">The software and its boundaries</h2>
+<p>The project consists of <code>brokerd</code>, a small client library, command-line producer and consumer programs, and a failure/load harness. All belong to one Cargo workspace. The harness is not a second independent project: it exercises the broker's actual protocol and persistent state.</p>
+<p>You implement record encoding and decoding, sparse indexing, segment rotation, batching policy, recovery decisions, delivery state machines, progress publication, deletion eligibility, resource accounting, and supervision. Tokio supplies execution, sockets, timers, and synchronization primitives. The standard library supplies files and threads. A checksum library supplies the CRC calculation, not the record format, recovery policy, or storage engine. No database, durable queue, broker, actor framework, or workflow engine replaces these mechanisms.</p>
+<p>The service binds only to loopback. Separate producer and consumer/control listeners reserve connection capacity for consuming and acknowledging when publishers are saturated. Both feed the same four owners; this is not a distributed topology. Consumer workers explicitly choose a group and partition. Multiple workers can share a group without implementing membership discovery or partition rebalancing.</p>
+<p>There is no replication, consensus, multi-node failover, SQL, Kafka wire compatibility, dynamic topic creation, partition-count change, group creation/deletion, authentication, TLS, dashboard, or mandatory unsafe code. A permanently failing record can block a group's progress; there is no automatic skip or dead-letter policy. Smaller scale makes the state transitions observable without removing the difficult mechanisms.</p>
+<h3 id="ordering-success-and-ambiguous-outcomes">Ordering, success, and ambiguous outcomes</h3>
+<p>Each stored record has a <code>(partition, offset)</code> identity. Offsets increase within a partition; they do not order records across partitions. A producer selects its partition explicitly, and concurrent append order is the order assigned by that partition's owner—not the order in which remote calls began. First attempts are offered in offset order, but concurrent completion and retries are not an ordered execution guarantee.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>What a successful response means</th>
+<th>What it does not mean</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Publish</td>
+<td>The owner wrote the record, completed the selected file-synchronization boundary, and made the offset visible.</td>
+<td>A reply lost in transit does not imply that the append failed. Retrying can append the same logical input again.</td>
+</tr>
+<tr>
+<td>Fetch</td>
+<td>The group received a bounded delivery attempt with a lease token.</td>
+<td>The external work is complete, or another attempt can never occur.</td>
+</tr>
+<tr>
+<td>Acknowledge</td>
+<td>A current token was accepted into the in-memory completion window. The response reports volatile and persisted progress separately.</td>
+<td>That this acknowledgement has necessarily reached a durable checkpoint.</td>
+</tr>
+<tr>
+<td>Checkpoint</td>
+<td>The group's contiguous next offset was published successfully to persistent metadata.</td>
+<td>External side effects were committed atomically with the checkpoint.</td>
+</tr>
+<tr>
+<td>Retain/delete</td>
+<td>Only whole closed segments below both groups' persisted progress became eligible for deletion.</td>
+<td>An active segment, an unread record, or a stalled group's work may be discarded to make room.</td>
+</tr>
+</tbody>
+</table>
+<p>The contract is <strong>at-least-once delivery</strong>, conditional on eventual consumer progress and available storage, not exactly-once external processing. Consumers acknowledge only after completing their work. A process failure after that work but before its checkpoint can repeat the work. Producer retries that create different offsets and delivery retries of one offset are counted separately. The distinction between publishing, consumption, and external effects is also discussed in Apache Kafka's versioned <a href="https://kafka.apache.org/41/design/design/#message-delivery-semantics">message-delivery design</a>; this broker does not implement Kafka's additional distributed guarantees.</p>
+<h3 id="failure-model">Failure model</h3>
+<p>The mandatory recovery model is termination and restart of the broker while the operating system and filesystem remain running. Tests also inject short writes, write/sync errors, incomplete trailing records, and complete corrupt records. They do not establish survival of sudden physical power loss, a lost disk, arbitrary file replacement, or corrupted external consumer state.</p>
+<p>Use explicit synchronization and handle its errors. Rust's <a href="https://doc.rust-lang.org/std/fs/struct.File.html#method.sync_all"><code>File::sync_all</code></a> is distinct from a successful write; file-drop errors are not reported to the caller. The course does not turn that API into an unsupported physical-storage guarantee.</p>
+<p>A complete record with an invalid checksum, an unexplained offset gap, or corruption in an immutable segment is a startup error. Only an incomplete final append in the active segment is eligible for tail repair under the append protocol. A valid full header must be checked before trusting its declared body length. After a write or sync error, the owner refuses further mutations instead of continuing from an uncertain cursor. The supervisor stops the broker; restart performs recovery before reopening admission.</p>
+<h2 id="architecture-ownership-follows-the-state">Architecture: ownership follows the state</h2>
+<p>A partition owner holds the log files, sparse index, pending append batch, two group windows, and progress metadata. It serializes mutations to that partition. Network tasks never hold a file cursor or a mutable reference into an owner's buffers. Requests carry owned data and a reply channel; replies carry owned, accounted-for buffers.</p>
+<figure class="code-block"><figcaption><span class="code-title">The completed broker</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>Producer sessions --&gt; producer admission ----&gt; data lane -----+
+                                                              |
+Consumer sessions --&gt; response reservation --&gt; fetch lane ----+--&gt; partition owner
+Acks/checkpoints ---&gt; reserved control lane -------------------+     (one of four)
+                                                                     |
+                    supervisor &lt;---- worker result                   +--&gt; log + index
+                         |                                           +--&gt; group windows
+                         +--&gt; stop admission, drain, join             +--&gt; checkpoints
+                                                                     +--&gt; retention
+</code></pre></figure>
+<p>The data, fetch, and acknowledgement/control paths have separate limits. Scheduling gives control work recurring service without starving append work. An owner must not wait for payload capacity that only its own pending acknowledgements can release. Blocking file operations run on the dedicated threads, not on async runtime workers. Tokio's documentation distinguishes finite <a href="https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html"><code>spawn_blocking</code> work from dedicated threads</a>; already-running blocking work cannot simply be aborted.</p>
+<p>Reads and deletion are serialized by the same owner. A fetch copies a bounded response while the source segment is still owned; the response no longer depends on the file when deletion is considered. This deliberately avoids an initial memory-mapped or shared-file-pin design. The cost of the copy remains visible in measurements.</p>
+<h3 id="four-different-offsets">Four different offsets</h3>
+<p>All progress values are <strong>exclusive next offsets</strong>. For partition <span class="math-input" data-display="false">p</span> and group <span class="math-input" data-display="false">g</span>, let <span class="math-input" data-display="false">W_p</span> be the next append offset, <span class="math-input" data-display="false">V_p</span> the end of the synchronized visible prefix, <span class="math-input" data-display="false">A_{g,p}</span> the first offset not yet contiguously acknowledged in memory, and <span class="math-input" data-display="false">D_{g,p}</span> its persisted checkpoint. The implementation maintains:</p>
+<div class="math-input" data-display="true">0 \le D_{g,p} \le A_{g,p} \le V_p \le W_p.</div>
+<p>For example, a new group has <span class="math-input" data-display="false">A=0</span>. It finishes offsets 0, 2, and 3 while offset 1 remains outstanding. Its contiguous progress is 1, not 4. Once offset 1 completes, progress becomes 4. Until that value is checkpointed, its persisted progress may still be 0 and recovery must allow repeats from 0.</p>
+<p>Let <span class="math-input" data-display="false">R_p</span> be the first retained offset. With two groups, safe retention also requires:</p>
+<div class="math-input" data-display="true">R_p \le \min(D_{0,p}, D_{1,p}).</div>
+<p>A closed segment ending at exclusive offset <span class="math-input" data-display="false">E</span> is eligible only when <span class="math-input" data-display="false">E \le \min(D_{0,p}, D_{1,p})</span>. If a segment covers offsets 0 through 3 and the group checkpoints are 6 and 3, it stays. It becomes eligible when the second group reaches 4. The active segment always stays. Retention publishes its new floor before removing eligible files, so restart can finish an interrupted deletion without interpreting it as an unexplained gap.</p>
+<p>These symbols map to integer fields and comparisons, not to a separate mathematical subsystem. The chapters derive the window, lookup, and accounting calculations with small traces before implementing their loops.</p>
+<h3 id="leases-restart-epochs-and-progress">Leases, restart epochs, and progress</h3>
+<p>A delivery token contains the restart epoch, group, partition, offset, and attempt generation. Within one run, a retry increments its generation. Before serving any client after restart, the broker persists a new epoch under the exclusive data-directory lock. Both counters use checked arithmetic; exhaustion fails rather than wrapping into a previously valid token.</p>
+<p>Lease time is monotonic within a run and is not restored from wall-clock timestamps. At or beyond its deadline, a token is expired even if a periodic retry scan has not visited it yet. The owner checks that rule when processing an acknowledgement. A previous attempt or epoch cannot advance progress. This fencing protects broker state; it cannot stop a stale consumer from making an external side effect.</p>
+<p>The completion window holds at most a configured number of offsets from its contiguous base. Completed entries above a gap still occupy the window. Lease state and completion bits are volatile; only the contiguous checkpoint is authoritative across restart. Published metadata uses a same-directory temporary file, explicit synchronization, replacement, and the platform-appropriate directory handling. <a href="https://doc.rust-lang.org/std/fs/fn.rename.html"><code>rename</code></a> has platform and filesystem boundaries that the implementation must respect. A corrupt authoritative checkpoint is not silently replaced by an older one after records may already have been deleted.</p>
+<h3 id="resource-limits-are-part-of-the-algorithm">Resource limits are part of the algorithm</h3>
+<p>The starting demonstration configuration uses a 64 KiB payload limit, 8 MiB segment target, 256-offset window per group/partition, and 256 KiB encoded fetch-response limit. These are tunable workload limits, not measured performance claims. Eight windows give at most <span class="math-input" data-display="false">4 \times 2 \times 256 = 2048</span> tracked delivery positions. A retry timer may not accumulate an unbounded history of obsolete attempts; the first implementation scans the bounded windows.</p>
+<p>The payload-buffer allowance is 64 MiB: 8 MiB of append capacity and 4 MiB of fetch-response capacity per partition, plus 16 MiB of fixed owner scratch capacity. Thus <span class="math-input" data-display="false">4 \times 8 + 4 \times 4 + 16 = 64</span> MiB. Reserved capacity follows the owning buffer through a mailbox, batch, and socket write, including abandoned replies. Actual allocation capacity and simultaneous encoding copies count; payload length alone is not sufficient. Small fixed headers, connection state, indexes, window entries, thread stacks, allocator overhead, and operating-system caches are described and measured separately. <strong>64 MiB is not a process-RSS promise.</strong></p>
+<p>The default logical data-directory allowance is 512 MiB. Reserve 8 MiB for bounded metadata and rotation overhead, leaving four 126 MiB partition quotas for segment files. Derived indexes initially live only in memory. Account for existing file lengths and outstanding append reservations before admitting writes; the logical cap has no intentional overshoot. Physical filesystem allocation is observed separately. A hot partition can exhaust its quota while another has space: cross-partition borrowing is deliberately absent.</p>
+<p>A full disk budget returns bounded overload rather than holding unlimited producers. A healthy consumer/control connection must still acknowledge, checkpoint, and release eligible space. The design assumes file operations eventually return; a blocked device cannot be repaired by queue scheduling. Tokio's <a href="https://docs.rs/tokio/latest/tokio/sync/struct.Semaphore.html">weighted semaphore behavior</a> supplies useful ownership primitives, but not the broker's pool separation, admission policy, or deadlock argument.</p>
+<h2 id="starting-knowledge-and-native-environment">Starting knowledge and native environment</h2>
+<p>Basic programming in C or Python is sufficient. No prior Rust, asynchronous Rust, broker implementation, or storage-engine experience is assumed. Chapters 1–6 are actual implementation chapters with small complete programs. They establish the language tools before the broker is built, rather than asking the reader to learn Rust while debugging an unexplained storage system.</p>
+<p>Use native macOS on an Apple M4 Mac mini with 16 GB of memory. No virtual machine, Linux-only tracing baseline, x86 assembly, container environment, or cloud account is required. Inspect the actual machine rather than assuming its macOS release:</p>
+<figure class="code-block"><figcaption><span class="code-title">Observe the local toolchain; these are not installation commands</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>uname<span class="w"> </span>-m
+sw_vers
+xcrun<span class="w"> </span>clang<span class="w"> </span>--version
+rustc<span class="w"> </span>-vV
+cargo<span class="w"> </span>--version
+</code></pre></figure>
+<p>A maintained stable Rust toolchain, Cargo, and working native linker are the suggested baseline. The manifests use edition 2024, introduced in Rust 1.85; the directory-lock implementation uses <code>File::try_lock</code>, stabilized in Rust 1.89. These are <a href="https://doc.rust-lang.org/edition-guide/rust-2024/index.html">edition</a> and <a href="https://doc.rust-lang.org/std/fs/struct.File.html#method.try_lock">API</a> compatibility facts, not instructions to install either old release. Dependencies can impose a higher actual minimum. Compatible newer installations are acceptable; an equivalent locking adapter can support a different toolchain without changing the storage contract. Rust's upstream <a href="https://rust-lang.org/policies/security/#receiving-security-updates">security policy</a> supports the current stable release rather than an upstream LTS channel.</p>
+<p>Introduce Tokio only in Chapter 6, using its maintained 1.x line with the features actually used: runtime, macros, synchronization, time, and later networking, I/O, and signals. Introduce <a href="https://docs.rs/crc32fast/latest/crc32fast/"><code>crc32fast</code></a> in Chapter 7 for IEEE CRC32 calculation. The learner retains <code>Cargo.lock</code> for reproducible application builds; dependency versions are recorded when resolved rather than prescribed as permanent gates. The Cargo <a href="https://doc.rust-lang.org/cargo/reference/workspaces.html">workspace model</a> provides a common lockfile, build directory, and workspace-wide checks. Optional formatting, linting, debugger, and platform profiling tools supplement—not replace—the executable checks.</p>
+<h2 id="the-implementation-workspace">The implementation workspace</h2>
+<p>The following is the layout reached during the course, not a requirement to create empty modules in advance. <code>language-lab</code> is the only member needed at the beginning. The library and application members appear when their first working capability is introduced.</p>
+<figure class="code-block"><figcaption><span class="code-title">Learner workspace on work/partition-broker</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>Cargo.toml
+Cargo.lock
+crates/
+  language-lab/
+    Cargo.toml
+    src/lib.rs
+    examples/
+      workspace_probe.rs
+      borrowed_record.rs
+      fallible_frame.rs
+      generic_scan.rs
+      thread_handoff.rs
+      cancel_permits.rs
+  broker-core/
+    Cargo.toml
+    src/
+      lib.rs
+      types.rs
+      error.rs
+      codec.rs
+      io.rs
+      storage/
+        mod.rs
+        directory.rs
+        segment.rs
+        index.rs
+        metadata.rs
+        recovery.rs
+        retention.rs
+      delivery/
+        mod.rs
+        window.rs
+        lease.rs
+        progress.rs
+      worker.rs
+      mailbox.rs
+      budget.rs
+    tests/
+      codec.rs
+      storage.rs
+      delivery.rs
+      recovery.rs
+      pressure.rs
+  broker-app/
+    Cargo.toml
+    src/
+      lib.rs
+      protocol.rs
+      client.rs
+      server.rs
+      supervisor.rs
+      workload.rs
+      metrics.rs
+      bin/
+        brokerd.rs
+        brokerctl.rs
+        broker-load.rs
+    tests/
+      wire.rs
+      lifecycle.rs
+      end_to_end.rs
+runs/                         # disposable fixtures and measured outputs; ignored
+</code></pre></figure>
+<p><code>broker-core</code> owns the algorithms and file state. It does not depend on socket parsing or command-line flags. <code>broker-app</code> owns transport, process supervision, clients, and the final workload. Tests use temporary directories they create themselves; destructive failure cases never target unrelated data. A data directory contains a stable lock file, broker metadata with the epoch, and four partition directories with segments, two group checkpoints, and a retention floor. Sparse indexes are reconstructed from segments and are not trusted persistent state.</p>
+<h2 id="implementation-plan-and-hours">Implementation plan and hours</h2>
+<p>Follow the chapters in order; each starts from the preceding runnable state and names the interfaces it extends. Foundation programs remain independently runnable. Commands in the outlines below describe checks available <strong>after implementing that chapter</strong>, not binaries already supplied with this roadmap.</p>
+<p>The plan contains <strong>80.0 hours of scheduled implementation</strong> plus <strong>8.5 hours of unallocated debugging/integration contingency</strong>, for <strong>88.5 hours total</strong>. Estimates assume a fast implementer following complete explanations and reference routines. They count setup, language exercises, code, tests, diagnosis, integration, and measurement. Reading, textbook writing, and publication are excluded. Focused tests are included in their mechanism chapters; later chapters add cross-subsystem checks rather than charging for those tests twice.</p>
+<table>
+<thead>
+<tr>
+<th>Chapter</th>
+<th>Capability</th>
+<th style="text-align:right">Implementation hours</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Native workspace, modules, and executable checks</td>
+<td style="text-align:right">1.5</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Ownership, borrowing, and lifetime-bound views</td>
+<td style="text-align:right">2.5</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Enums, fallible parsing, and composed errors</td>
+<td style="text-align:right">2.0</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Traits, generics, iterators, and bounded collections</td>
+<td style="text-align:right">2.5</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Shared ownership, threads, and synchronization</td>
+<td style="text-align:right">2.5</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Futures, async ownership, and cancellation</td>
+<td style="text-align:right">2.5</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Record format, typed offsets, and the I/O boundary</td>
+<td style="text-align:right">3.5</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Segments, sparse indexing, and bounded reads</td>
+<td style="text-align:right">4.5</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Partition owners and synchronized group commit</td>
+<td style="text-align:right">6.0</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Recovery, metadata publication, and restart epochs</td>
+<td style="text-align:right">6.0</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Bounded delivery and out-of-order completion</td>
+<td style="text-align:right">5.0</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Lease expiration, retries, and stale-token fencing</td>
+<td style="text-align:right">4.5</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Durable consumer progress</td>
+<td style="text-align:right">4.5</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Safe retention and disk admission</td>
+<td style="text-align:right">4.5</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Byte budgets and pressure-safe admission</td>
+<td style="text-align:right">5.0</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Framed TCP sessions and clients</td>
+<td style="text-align:right">4.5</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Cancellation boundaries and supervised shutdown</td>
+<td style="text-align:right">4.5</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Deterministic failure schedules and recovery checks</td>
+<td style="text-align:right">4.5</td>
+</tr>
+<tr>
+<td>19</td>
+<td>End-to-end coverage and overload demonstration</td>
+<td style="text-align:right">5.0</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Resource measurement and one justified optimization</td>
+<td style="text-align:right">4.5</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Scheduled implementation</strong></td>
+<td style="text-align:right"><strong>80.0</strong></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Unallocated contingency</strong></td>
+<td style="text-align:right"><strong>8.5</strong></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Total</strong></td>
+<td style="text-align:right"><strong>88.5</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The phase totals are 13.5 hours for foundations, 20.0 for storage, 18.5 for delivery/progress/retention, 14.0 for admission/network/lifecycle integration, and 14.0 for integrated failure work and measurement. Record actual implementation time by chapter and revise remaining estimates when actuals diverge. The contingency is not another feature list. Keep the failure and ownership mechanisms; reduce optional workload scale or peripheral tooling first.</p>
+<h2 id="part-1-rust-before-the-broker">Part 1 — Rust before the broker</h2>
+<h3 id="chapter-1-native-workspace-modules-and-executable-checks">Chapter 1 — Native workspace, modules, and executable checks</h3>
+<p><strong>Prerequisites:</strong> basic functions, loops, arrays, and command-line use; no Rust code. <strong>Time:</strong> 1.5 hours: 1.0 for setup/programming and 0.5 for checks and diagnosis.</p>
+<p><strong>Sections.</strong> Establish native compiler/linker observations and create a workspace containing only <code>language-lab</code>. Distinguish a package, crate, module, library target, example target, and test. Introduce bindings, integer types, function returns, expressions, basic control flow, paths, and the macros used in the example. Separate a small byte-summary function into the library and call it from an executable. Use <code>cargo check</code>, <code>cargo run</code>, <code>cargo test</code>, formatting, and one deliberately failed assertion to inspect a real diagnostic.</p>
+<p><strong>Runnable outcome:</strong> <code>examples/workspace_probe.rs</code> summarizes a fixed byte fixture through library functions and verifies its counts and integer arithmetic. <code>cargo run -p language-lab --example workspace_probe</code> and <code>cargo test -p language-lab</code> need no other workspace member. Correct a module-path error and a numerical boundary error without changing the intended result. No broker files or networking are needed.</p>
+<h3 id="chapter-2-ownership-borrowing-and-lifetime-bound-views">Chapter 2 — Ownership, borrowing, and lifetime-bound views</h3>
+<p><strong>Prerequisites:</strong> Chapter 1's workspace and test commands. <strong>Time:</strong> 2.5 hours: 1.75 programming and 0.75 compiler experiments/tests.</p>
+<p><strong>Sections.</strong> Follow values through moves, <code>Copy</code>, deliberate cloning, scope exit, and stack/heap ownership. Introduce structs and methods around an owned byte vector. Compare immutable/mutable borrows and slices; show why reallocation cannot overlap a live view. Build a record view with an explicit lifetime tied to its input, then convert a selected view to owned bytes when it must survive buffer mutation. Explain <code>String</code> versus byte storage and use byte fixtures without assuming arbitrary payloads are UTF-8.</p>
+<p><strong>Runnable outcome:</strong> <code>borrowed_record.rs</code> views a known-valid fixed record, copies one selected payload, ends the borrow, and mutates the original buffer while the independent copy remains valid. It does not yet require a fallible parser. Run <code>cargo run -p language-lab --example borrowed_record</code>. Investigate use-after-move, a returned reference to local storage, and mutation during a live borrow as intentional compiler failures, then keep the working example buildable. The <a href="https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html">lifetime reference</a> supports the distinction between a borrow's validity and the storage owner's lifetime.</p>
+<h3 id="chapter-3-enums-fallible-parsing-and-composed-errors">Chapter 3 — Enums, fallible parsing, and composed errors</h3>
+<p><strong>Prerequisites:</strong> Chapter 2's byte ownership and slice views. <strong>Time:</strong> 2.0 hours: 1.25 programming and 0.75 boundary/error tests.</p>
+<p><strong>Sections.</strong> Introduce <code>enum</code>, <code>match</code>, <code>Option</code>, and <code>Result</code> before using them to distinguish incomplete input from invalid input. Implement checked length arithmetic and an owned adapter around a borrowed frame probe. Teach <code>?</code>, <code>map_err</code>, conversions, and error context; implement <code>Display</code> and <code>std::error::Error</code> for a concrete parser/application error. Explain when a panic is a programming assertion and when an error must be returned to a caller.</p>
+<p><strong>Runnable outcome:</strong> <code>fallible_frame.rs</code> handles partial headers, partial bodies, two coalesced frames, an empty frame, an over-limit declaration, and end-of-input. <code>cargo run -p language-lab --example fallible_frame</code> verifies that incomplete/invalid input is not consumed. A deliberately truncated fixture reports its location rather than panicking. The complete probe, consume adapter, error helpers, and fixtures are all part of this program; no network decoder is assumed.</p>
+<h3 id="chapter-4-traits-generics-iterators-and-bounded-collections">Chapter 4 — Traits, generics, iterators, and bounded collections</h3>
+<p><strong>Prerequisites:</strong> Chapter 3's parser and error types. <strong>Time:</strong> 2.5 hours: 1.75 programming and 0.75 comparison/boundary checks.</p>
+<p><strong>Sections.</strong> Define a small trait and a generic record scanner with useful bounds, then compare static dispatch with a narrowly used trait object. Introduce closures and iterator ownership: consuming items, borrowing items, and collecting only when necessary. Choose between <code>Vec</code>, <code>VecDeque</code>, and an ordered map for concrete lookup/window needs. Implement a fixed-capacity ring and a predecessor search, including empty input and wraparound. Introduce <code>Box</code> where owned indirection is genuinely useful; do not build a framework of generic policies.</p>
+<p><strong>Runnable outcome:</strong> <code>generic_scan.rs</code> runs the same scan over two simple sources and compares the bounded predecessor lookup with a linear reference. <code>cargo run -p language-lab --example generic_scan</code> checks boundary keys and repeated ring wraparound. The tests expose capacity versus length and accidental full-input collection. These are language exercises, not the production log or consumer window; later chapters give those structures their own invariants.</p>
+<h3 id="chapter-5-shared-ownership-threads-and-synchronization">Chapter 5 — Shared ownership, threads, and synchronization</h3>
+<p><strong>Prerequisites:</strong> Chapters 1–4, including the bounded ring. <strong>Time:</strong> 2.5 hours: 1.5 programming and 1.0 synchronization/cleanup checks.</p>
+<p><strong>Sections.</strong> Contrast <code>Rc</code>, <code>RefCell</code>, <code>Arc</code>, and <code>Mutex</code> by ownership and permitted mutation. Explain <code>Send</code> and <code>Sync</code> before moving work to another thread; neither means that arbitrary compound operations are automatically correct. Implement a small bounded two-lane handoff with <code>Mutex</code> and <code>Condvar</code>, a predicate loop, and explicit closed state. Use an RAII guard to return a reservation and join every worker. Compare a lock-protected metric with an atomic observation counter while keeping correctness-critical decisions under the state owner.</p>
+<p><strong>Runnable outcome:</strong> <code>thread_handoff.rs</code> transfers owned messages, demonstrates a full queue, closes admission, drains accepted work, and joins the thread. <code>cargo run -p language-lab --example thread_handoff</code> verifies that control work is not permanently starved and reservations return on error. Diagnose a lost-notification pattern and premature closure. Explain rejected <code>Rc</code> transfer using Rust's <a href="https://doc.rust-lang.org/book/ch16-04-extensible-concurrency-sync-and-send.html"><code>Send</code>/<code>Sync</code> model</a>, without introducing manual unsafe implementations.</p>
+<h3 id="chapter-6-futures-async-ownership-and-cancellation">Chapter 6 — Futures, async ownership, and cancellation</h3>
+<p><strong>Prerequisites:</strong> Chapter 5's ownership, synchronization, and cleanup program. <strong>Time:</strong> 2.5 hours: 1.5 programming and 1.0 cancellation experiments.</p>
+<p><strong>Sections.</strong> Introduce <code>async</code>, <code>.await</code>, <code>Future::poll</code>, <code>Pending</code>/<code>Ready</code>, and waking with a small safe example; use Tokio rather than writing an executor. Explain what state survives suspension, why spawning needs owned data and appropriate <code>Send</code>/<code>'static</code> bounds, and what those bounds do not mean. Introduce <code>Pin</code>/<code>Unpin</code> at the point a future is pinned without unsafe self-referential structures. Trace owned permits through <code>select!</code>, early return, task completion, dropping a future, and dropping a join handle.</p>
+<p><strong>Runnable outcome:</strong> <code>cancel_permits.rs</code> uses explicit barriers/notifications rather than timing luck to cancel before and after a resource handoff. <code>cargo run -p language-lab --example cancel_permits</code> demonstrates restored capacity and distinguishes abandoning a reply from cancelling transferred work. No lock guard crosses an await accidentally. Read Tokio's <a href="https://tokio.rs/tokio/tutorial/spawning">spawn bounds</a>, <a href="https://docs.rs/tokio/latest/tokio/macro.select.html#cancellation-safety"><code>select!</code> cancellation rules</a>, and Rust's <a href="https://doc.rust-lang.org/std/pin/index.html"><code>Pin</code> contract</a> alongside the actual state trace. This is the last standalone foundation chapter.</p>
+<h2 id="part-2-authoritative-storage">Part 2 — Authoritative storage</h2>
+<h3 id="chapter-7-record-format-typed-offsets-and-the-io-boundary">Chapter 7 — Record format, typed offsets, and the I/O boundary</h3>
+<p><strong>Prerequisites:</strong> all six foundation programs. <strong>Time:</strong> 3.5 hours: 2.5 implementation and 1.0 format/error tests.</p>
+<p><strong>Sections.</strong> Create <code>broker-core</code> and introduce newtypes for partitions, groups, offsets, and epochs so unrelated integers are not interchangeable. Specify the segment and record byte layouts with explicit endianness, versioning, checked lengths, header integrity, body checksum, and maximum sizes. Implement full encode/decode routines and enumerate valid, incomplete, and corrupt outcomes. Define the small storage-I/O interface used by real files and a short-write/failure adapter. Hold a non-replaced lock-file handle for exclusive data-directory ownership; a leftover lock filename is not itself a live lock.</p>
+<p><strong>Implementation outcome:</strong> <code>types.rs</code>, <code>error.rs</code>, <code>codec.rs</code>, <code>io.rs</code>, and <code>storage/directory.rs</code> can round-trip records and reject malformed headers before allocating their declared bodies. <code>cargo test -p broker-core --test codec</code> exercises golden bytes, exact limits, overflow, and checksum failures. A two-process lock check rejects a second broker owner and succeeds after the first process exits. The CRC dependency computes checksums only; the learner writes every layout and validation decision.</p>
+<h3 id="chapter-8-segments-sparse-indexing-and-bounded-reads">Chapter 8 — Segments, sparse indexing, and bounded reads</h3>
+<p><strong>Prerequisites:</strong> Chapter 7's codec, directory guard, and file adapter. <strong>Time:</strong> 4.5 hours: 3.25 implementation and 1.25 storage tests/diagnosis.</p>
+<p><strong>Sections.</strong> Append whole records to a bounded active segment and rotate before its size limit would be exceeded. Name segments by base offset and handle an empty new tail without reusing offsets. Build an in-memory sparse offset-to-byte-position index, use predecessor lookup, and scan forward with validated record boundaries. Bound record count and response bytes independently. Explain file-position ownership and ensure reads restore or explicitly set the next append position.</p>
+<p><strong>Implementation outcome:</strong> <code>storage/segment.rs</code> and <code>storage/index.rs</code> support append, rotation, and offset reads in a single-threaded fixture. <code>cargo test -p broker-core --test storage</code> compares indexed reads with a full-scan oracle at every boundary of several small segments. Deleting the in-memory index and rebuilding it preserves the result. An over-large record is rejected, not placed in an over-large segment. This chapter does not yet expose a durable network publish operation; synchronization and replies arrive in Chapter 9.</p>
+<h3 id="chapter-9-partition-owners-and-synchronized-group-commit">Chapter 9 — Partition owners and synchronized group commit</h3>
+<p><strong>Prerequisites:</strong> Chapter 8's log/index and Chapters 5–6's handoff/cancellation programs. <strong>Time:</strong> 6.0 hours: 4.25 implementation and 1.75 interleaving/failure checks.</p>
+<p><strong>Sections.</strong> Give each of four dedicated threads one partition's mutable state and route owned commands through bounded lanes. Adapt the small handoff into <code>mailbox.rs</code>, with a timed wait for batch deadlines, explicit closure, and recurring control service. Accumulate batches under count, byte, and time limits; explain the difference between assigned, written, visible, and replied offsets. Complete synchronization before advancing visibility or sending successful publish replies. Poison the owner on uncertain file I/O, fail outstanding requests, and report the failure through a joined result path.</p>
+<p><strong>Implementation outcome:</strong> <code>worker.rs</code> and an in-process driver concurrently append to four partitions while preserving each owner's order. Tests with a controllable I/O adapter hold a sync call and prove that no earlier reply or fetch visibility escapes. A failed sync produces no success for that batch. Small bounded fixtures operate without the final network server or full asynchronous budget manager; no production memory-limit claim is made yet. Shutdown at this stage joins owners explicitly and never silently detaches them.</p>
+<h3 id="chapter-10-recovery-metadata-publication-and-restart-epochs">Chapter 10 — Recovery, metadata publication, and restart epochs</h3>
+<p><strong>Prerequisites:</strong> Chapter 9's synchronized owner and Chapter 7's fault-capable I/O boundary. <strong>Time:</strong> 6.0 hours: 4.0 implementation and 2.0 recovery fixtures/debugging.</p>
+<p><strong>Sections.</strong> Scan segments in offset order, rebuild sparse indexes, and derive append/visible ends without trusting old in-memory state. Distinguish incomplete active-tail bytes from complete checksum failure, invalid headers, immutable-segment corruption, and gaps. Repair only eligible tails, reset the append position, and synchronize recovery changes before admitting work. Implement same-directory metadata replacement and a first-creation protocol that does not mistake a partially initialized directory for a healthy broker. Allocate and publish a checked restart epoch before opening service.</p>
+<p><strong>Implementation outcome:</strong> <code>storage/recovery.rs</code> and <code>storage/metadata.rs</code> reopen valid fixtures, retain valid complete but previously unconfirmed records, repair an interrupted last append, and reject unexplained damage. <code>cargo test -p broker-core --test recovery</code> includes an empty rotated tail and interruptions around metadata publication. Old delivery identities cannot share the new epoch. A complete record found after a lost reply is allowed; recovery does not invent knowledge of which producer received a response. Existing directories with missing authoritative metadata fail closed rather than resetting counters.</p>
+<h2 id="part-3-delivery-progress-and-reclamation">Part 3 — Delivery, progress, and reclamation</h2>
+<h3 id="chapter-11-bounded-delivery-and-out-of-order-completion">Chapter 11 — Bounded delivery and out-of-order completion</h3>
+<p><strong>Prerequisites:</strong> Chapter 10's recovered visible prefix. <strong>Time:</strong> 5.0 hours: 3.5 implementation and 1.5 state-machine/reference checks.</p>
+<p><strong>Sections.</strong> Define independent group state over one shared partition log. Turn the foundation ring into a fixed-width delivery window, with explicit empty, outstanding, and completed states. Fill new positions only within the window and visible prefix; completed positions above a gap remain occupied. Mark completions and advance only over a contiguous prefix, using checked logical offsets and wrapped physical slots. Integrate bounded file reads while leaving storage ownership on the partition thread.</p>
+<p><strong>Implementation outcome:</strong> <code>delivery/window.rs</code> supports two groups progressing differently without duplicating the log. <code>cargo test -p broker-core --test delivery</code> exercises acknowledgement orders such as 2, 0, 3, 1, a stalled first offset, and several ring wraps against a simple set-based reference. The chapter's in-process completion interface is not exposed to untrusted clients; full token validation is added next. A fetch limited by bytes may return fewer records than the window has space for, and an empty visible suffix is not an error.</p>
+<h3 id="chapter-12-lease-expiration-retries-and-stale-token-fencing">Chapter 12 — Lease expiration, retries, and stale-token fencing</h3>
+<p><strong>Prerequisites:</strong> Chapter 11's window and Chapter 10's persisted epoch. <strong>Time:</strong> 4.5 hours: 3.0 implementation and 1.5 deadline/interleaving tests.</p>
+<p><strong>Sections.</strong> Introduce a monotonic clock interface with a manually advanced test clock. Attach deadlines and checked attempt generations to outstanding positions. Select expired retries without growing an unbounded timer structure or allocating a new window slot for the same offset. Validate epoch, group, partition, offset, generation, and deadline on every acknowledgement. Define no-mutation responses for stale or already-retired tokens and bound retry/new-delivery scheduling.</p>
+<p><strong>Implementation outcome:</strong> <code>delivery/lease.rs</code> redelivers expired work under a fresh token, rejects the previous token, and rejects an old token after restart. Exact-deadline tests require no sleep and cover acknowledgement-versus-expiry ordering. <code>cargo test -p broker-core --test delivery</code> confirms that duplicates do not double-count completion or advance through a gap. The lease does not cancel external consumer work, and a process restart intentionally forgets volatile attempts rather than pretending to resume a timer.</p>
+<h3 id="chapter-13-durable-consumer-progress">Chapter 13 — Durable consumer progress</h3>
+<p><strong>Prerequisites:</strong> Chapter 12's valid acknowledgements and Chapter 10's publication helper. <strong>Time:</strong> 4.5 hours: 3.0 implementation and 1.5 checkpoint/failure tests.</p>
+<p><strong>Sections.</strong> Separate volatile next offset from persisted next offset in both state and responses. Encode checksummed, versioned checkpoints and validate them against the recovered log and group identity. Publish only contiguous progress, on a bounded periodic policy or explicit checkpoint request. Explain what happens before replacement, after replacement, and after a failure that leaves publication outcome uncertain. On restart, rebuild the empty delivery window at persisted progress and allow repeated side effects rather than skipping uncheckpointed work.</p>
+<p><strong>Implementation outcome:</strong> <code>delivery/progress.rs</code> implements <code>AckAccepted</code> and <code>Checkpointed</code> with distinguishable meanings. Tests crash between completion and checkpoint, then between checkpoint-publication steps, and verify the correct repeat range. A checkpoint cannot exceed the synchronized visible end. Missing initial checkpoints are allowed only during defined initialization; missing or corrupt authoritative checkpoints in an established directory are errors. No old-file fallback may claim records are available after retention has removed them.</p>
+<h3 id="chapter-14-safe-retention-and-disk-admission">Chapter 14 — Safe retention and disk admission</h3>
+<p><strong>Prerequisites:</strong> Chapter 13's persisted group progress and Chapter 8's segment boundaries. <strong>Time:</strong> 4.5 hours: 3.0 implementation and 1.5 retention/restart/pressure tests.</p>
+<p><strong>Sections.</strong> Compute the minimum persisted group progress and select only whole eligible closed segments. Publish a monotonic retained floor before unlinking files, validate its relationship to checkpoints, and complete interrupted deletion during recovery. Serialize fetch copying and deletion through the owner; do not reclaim a file while a read still needs it. Account for file lengths, pending append reservations, and reserved metadata/rotation space under fixed partition quotas. Keep failure handling conservative when deletion or metadata publication fails.</p>
+<p><strong>Implementation outcome:</strong> <code>storage/retention.rs</code> and the disk-admission portion of <code>budget.rs</code> allow a stalled group to fill its partition quota without dropping its records. Acknowledging and checkpointing that group makes safe space reusable. <code>cargo test -p broker-core --test pressure</code> checks no-delete before persistence, exact segment boundaries, interrupted cleanup, and no intentional cap overshoot. The active segment is preserved even when fully consumed; rotation policy and reserved headroom prevent an accidental need to delete it to admit the next record.</p>
+<h2 id="part-4-bounded-asynchronous-service">Part 4 — Bounded asynchronous service</h2>
+<h3 id="chapter-15-byte-budgets-and-pressure-safe-admission">Chapter 15 — Byte budgets and pressure-safe admission</h3>
+<p><strong>Prerequisites:</strong> Chapter 14's disk policy, Chapter 9's lanes, and Chapter 6's async resource ownership. <strong>Time:</strong> 5.0 hours: 3.5 implementation and 1.5 saturation/cancellation checks.</p>
+<p><strong>Sections.</strong> Distinguish item count, encoded length, allocation capacity, and reserved bytes. Implement separate per-partition append and response pools plus fixed owner scratch, including all simultaneous copies. Carry RAII reservations with owned commands and replies; acquire response capacity before requesting a fetch. Combine mailbox-slot and byte admission without holding a mutex across an await, losing a notification, or waiting inside the owner on capacity it must itself release. Bound waiting callers through connection/operation limits and use explicit overload/deadline responses rather than an unbounded waiting list.</p>
+<p><strong>Implementation outcome:</strong> the complete <code>budget.rs</code> and asynchronous mailbox adapter handle cancellation before admission, after capacity acquisition, after handoff, and after reply abandonment. <code>cargo test -p broker-core --test pressure</code> saturates append pools while a healthy consumer still acknowledges and checkpoints. A request larger than its pool is rejected immediately. Allocation failure, failed admission, and ordinary overload leave consistent reservations. Bounded count alone is never used as evidence of the 64 MiB payload allowance.</p>
+<h3 id="chapter-16-framed-tcp-sessions-and-clients">Chapter 16 — Framed TCP sessions and clients</h3>
+<p><strong>Prerequisites:</strong> Chapter 15's bounded core APIs and Chapter 3's partial-frame rules. <strong>Time:</strong> 4.5 hours: 3.0 implementation and 1.5 wire/integration checks.</p>
+<p><strong>Sections.</strong> Create <code>broker-app</code> and a versioned length-prefixed protocol for publish, fetch, acknowledge, checkpoint, and small status queries. Specify the request/response fields and error meanings, including ambiguity after a disconnect. Decode a fixed header before reserving or reading the body; bound frame sizes, partial-input storage, connections, and output buffers. Give producer and consumer/control listeners independent connection capacity, enforce socket deadlines, and allow only one outstanding request per connection in the baseline. Implement a small client and command-line producer/consumer without hiding framing in a broker library.</p>
+<p><strong>Implementation outcome:</strong> <code>protocol.rs</code>, <code>client.rs</code>, <code>server.rs</code>, <code>brokerd</code>, and <code>brokerctl</code> exchange real records over loopback. <code>cargo test -p broker-app --test wire</code> splits a frame at every header/body boundary, coalesces frames, disconnects a slow peer, and rejects oversized input before its body is allocated. Consumer work runs before acknowledgement; explicit checkpointing is visible. Socket closure releases response memory without rolling back an append already owned by a partition.</p>
+<h3 id="chapter-17-cancellation-boundaries-and-supervised-shutdown">Chapter 17 — Cancellation boundaries and supervised shutdown</h3>
+<p><strong>Prerequisites:</strong> Chapter 16's network service and all previous state owners. <strong>Time:</strong> 4.5 hours: 3.0 implementation and 1.5 lifecycle/fatal-error tests.</p>
+<p><strong>Sections.</strong> Define the lifecycle from starting through serving, quiescing, draining, and stopped or failed. Stop new admission, close listeners, resolve already accepted commands, flush batches, checkpoint eligible progress, and join workers in an order that preserves resources. Distinguish a client's cancelled wait from cancellation of an accepted operation. Track every task/thread, report panics and fatal storage errors, and wake blocked admission waiters. Bound network draining while reporting honestly when a blocking file operation has not completed; a timeout is not successful termination.</p>
+<p><strong>Implementation outcome:</strong> <code>supervisor.rs</code> coordinates normal shutdown and a fatal partition error. <code>cargo test -p broker-app --test lifecycle</code> stops the service with full queues, a partial frame, a pending sync, and an abandoned reply. No success is emitted for unconfirmed work and no owner is quietly detached. A process can restart only after the previous owner exits or its directory lock is released. Tokio's <a href="https://tokio.rs/tokio/topics/shutdown">shutdown discussion</a> provides the notification/waiting primitives; the dependency order and accepted-work policy are implemented here.</p>
+<h2 id="part-5-failure-evidence-and-measured-behavior">Part 5 — Failure evidence and measured behavior</h2>
+<h3 id="chapter-18-deterministic-failure-schedules-and-recovery-checks">Chapter 18 — Deterministic failure schedules and recovery checks</h3>
+<p><strong>Prerequisites:</strong> Chapter 17's complete lifecycle and the earlier I/O/clock seams. <strong>Time:</strong> 4.5 hours: 2.75 implementation and 1.75 failure diagnosis.</p>
+<p><strong>Sections.</strong> Extend the focused fixtures into short, deterministic multi-step schedules across append, completion, checkpoint, and retention. Enumerate meaningful interruption points without a general model-checking framework. Compare the optimized structures with small reference states and a seeded schedule generator. Inject partial writes and sync failures, and separately construct damaged-file fixtures to avoid confusing synthetic corruption with a physical power event. Check cleanup and restart idempotence when an interrupted recovery is rerun.</p>
+<p><strong>Implementation outcome:</strong> cross-subsystem tests in <code>broker-core/tests</code> cover a lost publish reply, a progress gap during checkpoint, stale acknowledgement after retry, checkpoint/floor publication before deletion, and recovery interrupted a second time. Each failing schedule prints a reproducible seed and short transition trace. Existing unit tests are reused, not counted as new work. All destructive tests operate on fresh fixture directories, and a complete bad checksum is consistently refused rather than silently repaired.</p>
+<h3 id="chapter-19-end-to-end-coverage-and-overload-demonstration">Chapter 19 — End-to-end coverage and overload demonstration</h3>
+<p><strong>Prerequisites:</strong> Chapter 18's state/failure checks and Chapter 16's real clients. <strong>Time:</strong> 5.0 hours: 3.0 harness/integration and 2.0 scenario diagnosis.</p>
+<p><strong>Sections.</strong> Build <code>broker-load</code> and an external expected-record ledger keyed by producer logical ID and returned <code>(partition, offset)</code>. Track confirmed, ambiguous, rejected, delivered, and checkpointed outcomes separately. Drive several producers and both groups, deliberately stall or kill a consumer, and submit an obsolete token. Kill only the broker child process while the checker remains alive, restart it on the same directory, and compare retained data with the appropriate expected set. Exercise an aggressive small-budget configuration before a sustained bounded run.</p>
+<p><strong>Implementation outcome:</strong> <code>workload.rs</code> and <code>tests/end_to_end.rs</code> execute one reproducible scenario covering normal traffic, group lag, overload, consumer loss, broker restart, duplicates, and safe reclamation. The durable-coverage phase disables retention or deliberately keeps group progress low so confirmed records remain inspectable. A separate retention phase checks group coverage before deletion; deleted processed records are not reported as loss. The ledger remains outside the broker's directory and failure domain. <code>cargo test -p broker-app --test end_to_end</code> supplies a small automated run; the chapter also gives the complete manual demonstration commands.</p>
+<h3 id="chapter-20-resource-measurement-and-one-justified-optimization">Chapter 20 — Resource measurement and one justified optimization</h3>
+<p><strong>Prerequisites:</strong> Chapter 19's reproducible workload, correctness checker, and complete broker. <strong>Time:</strong> 4.5 hours: 2.0 measurement/analysis, 1.5 focused optimization, and 1.0 regression/repeat runs.</p>
+<p><strong>Sections.</strong> Measure confirmed append throughput, useful consumer throughput, latency distributions, admission wait, owner service time, recovery duration, rejection/timeouts, application buffer high-water marks, RSS, and logical/physical disk observations. Implement bounded histograms or bounded samples with stated precision and handle rejected requests rather than reporting only successes. Compare per-record synchronization with bounded batching under the same success contract and fixed workload settings. Inspect one measured bottleneck—such as copies, index scan distance, or batch flush frequency—make a focused change, and rerun correctness plus comparable measurements.</p>
+<p><strong>Implementation outcome:</strong> <code>metrics.rs</code>, workload reporting, and repeatable result files under <code>runs/</code> produce a before/after comparison with toolchain, configuration, record sizes, warmup, duration, and sample counts. Closed-loop concurrency and rate-controlled offered load are labelled separately; a rate-controlled generator bounds its own queue and reports missed schedule/deferred requests. No throughput target is assumed. A negative optimization result is valid when diagnosed; retain or revert it explicitly. The final run demonstrates the same delivery, recovery, retention, and memory-accounting contracts after the change.</p>
+<h2 id="the-final-demonstration">The final demonstration</h2>
+<p>Start with a small fixture that can be inspected record by record. Publish uniquely labelled inputs into all four partitions, let two groups advance at different rates, and retain the producer's confirmed-offset ledger outside the broker. Stop one consumer after it performs work but before it checkpoints. On retry, the same offset may repeat, while an obsolete acknowledgement must not change progress.</p>
+<p>Next interrupt the broker process without its graceful-shutdown path. After recovery, verify that confirmed records still required by either group are present, that complete unconfirmed records are allowed, and that partial active-tail bytes are treated according to the format. Validate corrupt-file refusal and injected I/O errors in separate disposable fixtures. A process-kill result is not relabelled a power-loss experiment.</p>
+<p>Finally fill a reduced partition quota with a stalled group. Publishers must receive bounded overload while healthy acknowledgement/control traffic remains usable. Resume the stalled group, checkpoint its contiguous progress, and observe safe whole-segment reclamation and renewed admission. Report duplicates and legitimate retention separately from missing required records.</p>
+<p>Run the bounded performance comparison only after those checks. Preserve the configuration and measurement output needed to reproduce the observed tradeoff. The end product is a working broker whose limits and failure behavior can be explained from its code, together with evidence that its interacting mechanisms behave as specified on the actual machine.</p>
+</article>
+<nav class="pager" aria-label="Previous and next chapters"><a href="chapter-01.html"><small>Next · Chapter 1</small><span>Native workspace, modules, and executable checks</span></a></nav>
+<footer>Rust Systems Engineering · Roadmap</footer>
+</main>
+<aside class="page-toc" aria-label="In this chapter"><div class="toc-title">In this chapter</div><ul><li class="toc-h2"><a href="#the-software-and-its-boundaries">The software and its boundaries</a></li><li class="toc-h3"><a href="#ordering-success-and-ambiguous-outcomes">Ordering, success, and ambiguous outcomes</a></li><li class="toc-h3"><a href="#failure-model">Failure model</a></li><li class="toc-h2"><a href="#architecture-ownership-follows-the-state">Architecture: ownership follows the state</a></li><li class="toc-h3"><a href="#four-different-offsets">Four different offsets</a></li><li class="toc-h3"><a href="#leases-restart-epochs-and-progress">Leases, restart epochs, and progress</a></li><li class="toc-h3"><a href="#resource-limits-are-part-of-the-algorithm">Resource limits are part of the algorithm</a></li><li class="toc-h2"><a href="#starting-knowledge-and-native-environment">Starting knowledge and native environment</a></li><li class="toc-h2"><a href="#the-implementation-workspace">The implementation workspace</a></li><li class="toc-h2"><a href="#implementation-plan-and-hours">Implementation plan and hours</a></li><li class="toc-h2"><a href="#part-1-rust-before-the-broker">Part 1 — Rust before the broker</a></li><li class="toc-h3"><a href="#chapter-1-native-workspace-modules-and-executable-checks">Chapter 1 — Native workspace, modules, and executable checks</a></li><li class="toc-h3"><a href="#chapter-2-ownership-borrowing-and-lifetime-bound-views">Chapter 2 — Ownership, borrowing, and lifetime-bound views</a></li><li class="toc-h3"><a href="#chapter-3-enums-fallible-parsing-and-composed-errors">Chapter 3 — Enums, fallible parsing, and composed errors</a></li><li class="toc-h3"><a href="#chapter-4-traits-generics-iterators-and-bounded-collections">Chapter 4 — Traits, generics, iterators, and bounded collections</a></li><li class="toc-h3"><a href="#chapter-5-shared-ownership-threads-and-synchronization">Chapter 5 — Shared ownership, threads, and synchronization</a></li><li class="toc-h3"><a href="#chapter-6-futures-async-ownership-and-cancellation">Chapter 6 — Futures, async ownership, and cancellation</a></li><li class="toc-h2"><a href="#part-2-authoritative-storage">Part 2 — Authoritative storage</a></li><li class="toc-h3"><a href="#chapter-7-record-format-typed-offsets-and-the-io-boundary">Chapter 7 — Record format, typed offsets, and the I/O boundary</a></li><li class="toc-h3"><a href="#chapter-8-segments-sparse-indexing-and-bounded-reads">Chapter 8 — Segments, sparse indexing, and bounded reads</a></li><li class="toc-h3"><a href="#chapter-9-partition-owners-and-synchronized-group-commit">Chapter 9 — Partition owners and synchronized group commit</a></li><li class="toc-h3"><a href="#chapter-10-recovery-metadata-publication-and-restart-epochs">Chapter 10 — Recovery, metadata publication, and restart epochs</a></li><li class="toc-h2"><a href="#part-3-delivery-progress-and-reclamation">Part 3 — Delivery, progress, and reclamation</a></li><li class="toc-h3"><a href="#chapter-11-bounded-delivery-and-out-of-order-completion">Chapter 11 — Bounded delivery and out-of-order completion</a></li><li class="toc-h3"><a href="#chapter-12-lease-expiration-retries-and-stale-token-fencing">Chapter 12 — Lease expiration, retries, and stale-token fencing</a></li><li class="toc-h3"><a href="#chapter-13-durable-consumer-progress">Chapter 13 — Durable consumer progress</a></li><li class="toc-h3"><a href="#chapter-14-safe-retention-and-disk-admission">Chapter 14 — Safe retention and disk admission</a></li><li class="toc-h2"><a href="#part-4-bounded-asynchronous-service">Part 4 — Bounded asynchronous service</a></li><li class="toc-h3"><a href="#chapter-15-byte-budgets-and-pressure-safe-admission">Chapter 15 — Byte budgets and pressure-safe admission</a></li><li class="toc-h3"><a href="#chapter-16-framed-tcp-sessions-and-clients">Chapter 16 — Framed TCP sessions and clients</a></li><li class="toc-h3"><a href="#chapter-17-cancellation-boundaries-and-supervised-shutdown">Chapter 17 — Cancellation boundaries and supervised shutdown</a></li><li class="toc-h2"><a href="#part-5-failure-evidence-and-measured-behavior">Part 5 — Failure evidence and measured behavior</a></li><li class="toc-h3"><a href="#chapter-18-deterministic-failure-schedules-and-recovery-checks">Chapter 18 — Deterministic failure schedules and recovery checks</a></li><li class="toc-h3"><a href="#chapter-19-end-to-end-coverage-and-overload-demonstration">Chapter 19 — End-to-end coverage and overload demonstration</a></li><li class="toc-h3"><a href="#chapter-20-resource-measurement-and-one-justified-optimization">Chapter 20 — Resource measurement and one justified optimization</a></li><li class="toc-h2"><a href="#the-final-demonstration">The final demonstration</a></li></ul></aside>
+</div></body></html>

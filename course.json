@@ -1,0 +1,442 @@
+{
+  "title": "Rust Systems Engineering",
+  "course_key": "rust-systems",
+  "repository": "https://github.com/25d-228/rust-learning",
+  "pages_url": "https://25d-228.github.io/rust-learning/",
+  "description": "Build a single-machine event broker with segmented storage, explicit delivery semantics, bounded resource ownership, crash recovery, and measured performance.",
+  "complete": true,
+  "pages": [
+    {
+      "id": "roadmap",
+      "label": "Roadmap",
+      "title": "A Durable Partitioned Event Broker",
+      "source": "roadmap.md",
+      "output": "index.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/1"
+    },
+    {
+      "id": "chapter-01",
+      "label": "Chapter 1",
+      "title": "Native workspace, modules, and executable checks",
+      "source": "chapter-01.md",
+      "output": "chapter-01.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/2"
+    },
+    {
+      "id": "chapter-02",
+      "label": "Chapter 2",
+      "title": "Ownership, borrowing, and lifetime-bound views",
+      "source": "chapter-02.md",
+      "output": "chapter-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/3"
+    },
+    {
+      "id": "chapter-03",
+      "label": "Chapter 3",
+      "title": "Enums, fallible parsing, and composed errors",
+      "source": "chapter-03.md",
+      "output": "chapter-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/4"
+    },
+    {
+      "id": "chapter-04",
+      "label": "Chapter 4",
+      "title": "Traits, generics, iterators, and bounded collections",
+      "source": "chapter-04.md",
+      "output": "chapter-04.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/5"
+    },
+    {
+      "id": "chapter-05",
+      "label": "Chapter 5",
+      "title": "Shared ownership, threads, and synchronization",
+      "source": "chapter-05.md",
+      "output": "chapter-05.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/6"
+    },
+    {
+      "id": "chapter-06",
+      "label": "Chapter 6",
+      "title": "Futures, async ownership, and cancellation",
+      "source": "chapter-06.md",
+      "output": "chapter-06.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/7"
+    },
+    {
+      "id": "chapter-07",
+      "label": "Chapter 7, Part 1",
+      "title": "Record bytes and typed identities",
+      "source": "chapter-07.md",
+      "output": "chapter-07.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/8"
+    },
+    {
+      "id": "chapter-07-part-02",
+      "label": "Chapter 7, Part 2",
+      "title": "File I/O and directory ownership",
+      "source": "chapter-07-part-02.md",
+      "output": "chapter-07-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/9"
+    },
+    {
+      "id": "chapter-08",
+      "label": "Chapter 8, Part 1",
+      "title": "Segments and sparse record lookup",
+      "source": "chapter-08.md",
+      "output": "chapter-08.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/10"
+    },
+    {
+      "id": "chapter-08-part-02",
+      "label": "Chapter 8, Part 2",
+      "title": "Rotation, bounded reads, and storage checks",
+      "source": "chapter-08-part-02.md",
+      "output": "chapter-08-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/11"
+    },
+    {
+      "id": "chapter-09",
+      "label": "Chapter 9, Part 1",
+      "title": "Dirty-file synchronization and timed mailboxes",
+      "source": "chapter-09.md",
+      "output": "chapter-09.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/12"
+    },
+    {
+      "id": "chapter-09-part-02",
+      "label": "Chapter 9, Part 2",
+      "title": "Owned commands and synchronized publication",
+      "source": "chapter-09-part-02.md",
+      "output": "chapter-09-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/13"
+    },
+    {
+      "id": "chapter-09-part-03",
+      "label": "Chapter 9, Part 3",
+      "title": "Controlled failures and four-partition checks",
+      "source": "chapter-09-part-03.md",
+      "output": "chapter-09-part-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/14"
+    },
+    {
+      "id": "chapter-10",
+      "label": "Chapter 10, Part 1",
+      "title": "Validate before repairing",
+      "source": "chapter-10.md",
+      "output": "chapter-10.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/15"
+    },
+    {
+      "id": "chapter-10-part-02",
+      "label": "Chapter 10, Part 2",
+      "title": "Publish the startup epoch",
+      "source": "chapter-10-part-02.md",
+      "output": "chapter-10-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/16"
+    },
+    {
+      "id": "chapter-10-part-03",
+      "label": "Chapter 10, Part 3",
+      "title": "Recovery fixtures and a process interruption",
+      "source": "chapter-10-part-03.md",
+      "output": "chapter-10-part-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/17"
+    },
+    {
+      "id": "chapter-11",
+      "label": "Chapter 11, Part 1",
+      "title": "A window that cannot advance through a gap",
+      "source": "chapter-11.md",
+      "output": "chapter-11.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/18"
+    },
+    {
+      "id": "chapter-11-part-02",
+      "label": "Chapter 11, Part 2",
+      "title": "Delivery on the partition owner",
+      "source": "chapter-11-part-02.md",
+      "output": "chapter-11-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/19"
+    },
+    {
+      "id": "chapter-11-part-03",
+      "label": "Chapter 11, Part 3",
+      "title": "Completion orders, bounded reads, and restart checks",
+      "source": "chapter-11-part-03.md",
+      "output": "chapter-11-part-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/20"
+    },
+    {
+      "id": "chapter-12",
+      "label": "Chapter 12, Part 1",
+      "title": "Attempts, deadlines, and a bounded retry window",
+      "source": "chapter-12.md",
+      "output": "chapter-12.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/21"
+    },
+    {
+      "id": "chapter-12-part-02",
+      "label": "Chapter 12, Part 2",
+      "title": "Clocked reads and owner integration",
+      "source": "chapter-12-part-02.md",
+      "output": "chapter-12-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/22"
+    },
+    {
+      "id": "chapter-12-part-03",
+      "label": "Chapter 12, Part 3",
+      "title": "Deterministic expiry and restart checks",
+      "source": "chapter-12-part-03.md",
+      "output": "chapter-12-part-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/23"
+    },
+    {
+      "id": "chapter-13",
+      "label": "Chapter 13, Part 1",
+      "title": "Checkpoint bytes and validated startup",
+      "source": "chapter-13.md",
+      "output": "chapter-13.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/24"
+    },
+    {
+      "id": "chapter-13-part-02",
+      "label": "Chapter 13, Part 2",
+      "title": "Accepted completion and checkpointed progress",
+      "source": "chapter-13-part-02.md",
+      "output": "chapter-13-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/25"
+    },
+    {
+      "id": "chapter-13-part-03",
+      "label": "Chapter 13, Part 3",
+      "title": "Publication cuts and repeat ranges",
+      "source": "chapter-13-part-03.md",
+      "output": "chapter-13-part-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/26"
+    },
+    {
+      "id": "chapter-14",
+      "label": "Chapter 14, Part 1",
+      "title": "Disk reservations and retained-floor metadata",
+      "source": "chapter-14.md",
+      "output": "chapter-14.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/27"
+    },
+    {
+      "id": "chapter-14-part-02",
+      "label": "Chapter 14, Part 2",
+      "title": "Segment reclamation and restart reconstruction",
+      "source": "chapter-14-part-02.md",
+      "output": "chapter-14-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/28"
+    },
+    {
+      "id": "chapter-14-part-03",
+      "label": "Chapter 14, Part 3",
+      "title": "Owner integration and a pressure trace",
+      "source": "chapter-14-part-03.md",
+      "output": "chapter-14-part-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/29"
+    },
+    {
+      "id": "chapter-14-part-04",
+      "label": "Chapter 14, Part 4",
+      "title": "Failure cuts and recovery checks",
+      "source": "chapter-14-part-04.md",
+      "output": "chapter-14-part-04.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/30"
+    },
+    {
+      "id": "chapter-15",
+      "label": "Chapter 15, Part 1",
+      "title": "Capacity-owned buffers and reserved lanes",
+      "source": "chapter-15.md",
+      "output": "chapter-15.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/31"
+    },
+    {
+      "id": "chapter-15-part-02",
+      "label": "Chapter 15, Part 2",
+      "title": "Bounded storage copies and owner integration",
+      "source": "chapter-15-part-02.md",
+      "output": "chapter-15-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/32"
+    },
+    {
+      "id": "chapter-15-part-03",
+      "label": "Chapter 15, Part 3",
+      "title": "Asynchronous admission and an owned response",
+      "source": "chapter-15-part-03.md",
+      "output": "chapter-15-part-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/33"
+    },
+    {
+      "id": "chapter-15-part-04",
+      "label": "Chapter 15, Part 4",
+      "title": "Pressure, cancellation, and executable checks",
+      "source": "chapter-15-part-04.md",
+      "output": "chapter-15-part-04.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/34"
+    },
+    {
+      "id": "chapter-16",
+      "label": "Chapter 16, Part 1",
+      "title": "Wire bytes and bounded frame decoding",
+      "source": "chapter-16.md",
+      "output": "chapter-16.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/35"
+    },
+    {
+      "id": "chapter-16-part-02",
+      "label": "Chapter 16, Part 2",
+      "title": "Sessions that retain resource ownership",
+      "source": "chapter-16-part-02.md",
+      "output": "chapter-16-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/36"
+    },
+    {
+      "id": "chapter-16-part-03",
+      "label": "Chapter 16, Part 3",
+      "title": "Cancellation-safe clients and loopback commands",
+      "source": "chapter-16-part-03.md",
+      "output": "chapter-16-part-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/37"
+    },
+    {
+      "id": "chapter-16-part-04",
+      "label": "Chapter 16, Part 4",
+      "title": "Fragmentation, slow peers, and ambiguity checks",
+      "source": "chapter-16-part-04.md",
+      "output": "chapter-16-part-04.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/38"
+    },
+    {
+      "id": "chapter-17",
+      "label": "Chapter 17, Part 1",
+      "title": "Admission closure and the final owner barrier",
+      "source": "chapter-17.md",
+      "output": "chapter-17.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/39"
+    },
+    {
+      "id": "chapter-17-part-02",
+      "label": "Chapter 17, Part 2",
+      "title": "A supervisor that retains its children",
+      "source": "chapter-17-part-02.md",
+      "output": "chapter-17-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/40"
+    },
+    {
+      "id": "chapter-17-part-03",
+      "label": "Chapter 17, Part 3",
+      "title": "Sessions, commands, and a joined restart",
+      "source": "chapter-17-part-03.md",
+      "output": "chapter-17-part-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/41"
+    },
+    {
+      "id": "chapter-17-part-04",
+      "label": "Chapter 17, Part 4",
+      "title": "Controlled shutdown and failure checks",
+      "source": "chapter-17-part-04.md",
+      "output": "chapter-17-part-04.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/42"
+    },
+    {
+      "id": "chapter-18",
+      "label": "Chapter 18, Part 1",
+      "title": "A small reference state for composed failures",
+      "source": "chapter-18.md",
+      "output": "chapter-18.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/43"
+    },
+    {
+      "id": "chapter-18-part-02",
+      "label": "Chapter 18, Part 2",
+      "title": "Reproducible owner schedules",
+      "source": "chapter-18-part-02.md",
+      "output": "chapter-18-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/44"
+    },
+    {
+      "id": "chapter-18-part-03",
+      "label": "Chapter 18, Part 3",
+      "title": "Publication and deletion cuts",
+      "source": "chapter-18-part-03.md",
+      "output": "chapter-18-part-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/45"
+    },
+    {
+      "id": "chapter-18-part-04",
+      "label": "Chapter 18, Part 4",
+      "title": "Interrupting recovery again",
+      "source": "chapter-18-part-04.md",
+      "output": "chapter-18-part-04.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/46"
+    },
+    {
+      "id": "chapter-19",
+      "label": "Chapter 19, Part 1",
+      "title": "External expectations and fresh recovery coverage",
+      "source": "chapter-19.md",
+      "output": "chapter-19.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/47"
+    },
+    {
+      "id": "chapter-19-part-02",
+      "label": "Chapter 19, Part 2",
+      "title": "Owned child processes and controlled interruption",
+      "source": "chapter-19-part-02.md",
+      "output": "chapter-19-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/48"
+    },
+    {
+      "id": "chapter-19-part-03",
+      "label": "Chapter 19, Part 3",
+      "title": "Coverage, overload, and safe reclamation",
+      "source": "chapter-19-part-03.md",
+      "output": "chapter-19-part-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/49"
+    },
+    {
+      "id": "chapter-19-part-04",
+      "label": "Chapter 19, Part 4",
+      "title": "Executable scenarios and checker counterexamples",
+      "source": "chapter-19-part-04.md",
+      "output": "chapter-19-part-04.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/50"
+    },
+    {
+      "id": "chapter-20",
+      "label": "Chapter 20, Part 1",
+      "title": "Bounded distributions and explicit observation boundaries",
+      "source": "chapter-20.md",
+      "output": "chapter-20.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/51"
+    },
+    {
+      "id": "chapter-20-part-02",
+      "label": "Chapter 20, Part 2",
+      "title": "Finite workloads and the index-density candidate",
+      "source": "chapter-20-part-02.md",
+      "output": "chapter-20-part-02.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/52"
+    },
+    {
+      "id": "chapter-20-part-03",
+      "label": "Chapter 20, Part 3",
+      "title": "Recovery, resource sampling, and comparable runs",
+      "source": "chapter-20-part-03.md",
+      "output": "chapter-20-part-03.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/53"
+    },
+    {
+      "id": "chapter-20-part-04",
+      "label": "Chapter 20, Part 4",
+      "title": "Regression checks and the retain-or-revert decision",
+      "source": "chapter-20-part-04.md",
+      "output": "chapter-20-part-04.html",
+      "issue_url": "https://github.com/25d-228/rust-learning/issues/54"
+    }
+  ]
+}

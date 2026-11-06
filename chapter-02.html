@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 2 — Ownership, borrowing, and lifetime-bound views · Rust Systems Engineering</title>
+<meta name="description" content="Build a single-machine event broker with segmented storage, explicit delivery semantics, bounded resource ownership, crash recovery, and measured performance.">
+<link rel="canonical" href="https://25d-228.github.io/rust-learning/chapter-02.html">
+<link rel="stylesheet" href="assets/code-light.css">
+<link rel="stylesheet" href="assets/course.css">
+<script>window.MathJax = {startup: {typeset: false}, options: {enableMenu: false}, svg: {fontCache: "local"}};</script>
+<script defer src="assets/vendor/tex-svg.js"></script>
+<script defer src="assets/course.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to chapter</a>
+<header class="topbar"><a class="brand" href="index.html"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M14 7C10 3 5 4 2 5v17c4-2 8-1 12 2m0-17c4-4 9-3 12-2v17c-4-2-8-1-12 2V7Z"/></svg><span>Rust Systems Engineering</span></a>
+<div class="header-actions"><a class="desktop-link" href="index.html">Overview</a><a class="desktop-link" href="chapter-01.html">Chapters</a><a class="desktop-link" href="https://github.com/25d-228/rust-learning">Repository</a><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="chapter-nav">Contents</button></div></header>
+<div class="book-layout">
+<aside class="sidebar" id="chapter-nav"><h2 class="sidebar-title">Contents</h2>
+<label for="chapter-filter">Find a chapter</label><input id="chapter-filter" type="search" placeholder="Search chapter titles…" autocomplete="off">
+<nav aria-label="Chapters"><ol><li><a href="index.html"><span class="chapter-label">Roadmap</span><span>A Durable Partitioned Event Broker</span></a></li><li><a href="chapter-01.html"><span class="chapter-label">Chapter 1</span><span>Native workspace, modules, and executable checks</span></a></li><li><a href="chapter-02.html" aria-current="page"><span class="chapter-label">Chapter 2</span><span>Ownership, borrowing, and lifetime-bound views</span></a></li><li><a href="chapter-03.html"><span class="chapter-label">Chapter 3</span><span>Enums, fallible parsing, and composed errors</span></a></li><li><a href="chapter-04.html"><span class="chapter-label">Chapter 4</span><span>Traits, generics, iterators, and bounded collections</span></a></li><li><a href="chapter-05.html"><span class="chapter-label">Chapter 5</span><span>Shared ownership, threads, and synchronization</span></a></li><li><a href="chapter-06.html"><span class="chapter-label">Chapter 6</span><span>Futures, async ownership, and cancellation</span></a></li><li><a href="chapter-07.html"><span class="chapter-label">Chapter 7, Part 1</span><span>Record bytes and typed identities</span></a></li><li><a href="chapter-07-part-02.html"><span class="chapter-label">Chapter 7, Part 2</span><span>File I/O and directory ownership</span></a></li><li><a href="chapter-08.html"><span class="chapter-label">Chapter 8, Part 1</span><span>Segments and sparse record lookup</span></a></li><li><a href="chapter-08-part-02.html"><span class="chapter-label">Chapter 8, Part 2</span><span>Rotation, bounded reads, and storage checks</span></a></li><li><a href="chapter-09.html"><span class="chapter-label">Chapter 9, Part 1</span><span>Dirty-file synchronization and timed mailboxes</span></a></li><li><a href="chapter-09-part-02.html"><span class="chapter-label">Chapter 9, Part 2</span><span>Owned commands and synchronized publication</span></a></li><li><a href="chapter-09-part-03.html"><span class="chapter-label">Chapter 9, Part 3</span><span>Controlled failures and four-partition checks</span></a></li><li><a href="chapter-10.html"><span class="chapter-label">Chapter 10, Part 1</span><span>Validate before repairing</span></a></li><li><a href="chapter-10-part-02.html"><span class="chapter-label">Chapter 10, Part 2</span><span>Publish the startup epoch</span></a></li><li><a href="chapter-10-part-03.html"><span class="chapter-label">Chapter 10, Part 3</span><span>Recovery fixtures and a process interruption</span></a></li><li><a href="chapter-11.html"><span class="chapter-label">Chapter 11, Part 1</span><span>A window that cannot advance through a gap</span></a></li><li><a href="chapter-11-part-02.html"><span class="chapter-label">Chapter 11, Part 2</span><span>Delivery on the partition owner</span></a></li><li><a href="chapter-11-part-03.html"><span class="chapter-label">Chapter 11, Part 3</span><span>Completion orders, bounded reads, and restart checks</span></a></li><li><a href="chapter-12.html"><span class="chapter-label">Chapter 12, Part 1</span><span>Attempts, deadlines, and a bounded retry window</span></a></li><li><a href="chapter-12-part-02.html"><span class="chapter-label">Chapter 12, Part 2</span><span>Clocked reads and owner integration</span></a></li><li><a href="chapter-12-part-03.html"><span class="chapter-label">Chapter 12, Part 3</span><span>Deterministic expiry and restart checks</span></a></li><li><a href="chapter-13.html"><span class="chapter-label">Chapter 13, Part 1</span><span>Checkpoint bytes and validated startup</span></a></li><li><a href="chapter-13-part-02.html"><span class="chapter-label">Chapter 13, Part 2</span><span>Accepted completion and checkpointed progress</span></a></li><li><a href="chapter-13-part-03.html"><span class="chapter-label">Chapter 13, Part 3</span><span>Publication cuts and repeat ranges</span></a></li><li><a href="chapter-14.html"><span class="chapter-label">Chapter 14, Part 1</span><span>Disk reservations and retained-floor metadata</span></a></li><li><a href="chapter-14-part-02.html"><span class="chapter-label">Chapter 14, Part 2</span><span>Segment reclamation and restart reconstruction</span></a></li><li><a href="chapter-14-part-03.html"><span class="chapter-label">Chapter 14, Part 3</span><span>Owner integration and a pressure trace</span></a></li><li><a href="chapter-14-part-04.html"><span class="chapter-label">Chapter 14, Part 4</span><span>Failure cuts and recovery checks</span></a></li><li><a href="chapter-15.html"><span class="chapter-label">Chapter 15, Part 1</span><span>Capacity-owned buffers and reserved lanes</span></a></li><li><a href="chapter-15-part-02.html"><span class="chapter-label">Chapter 15, Part 2</span><span>Bounded storage copies and owner integration</span></a></li><li><a href="chapter-15-part-03.html"><span class="chapter-label">Chapter 15, Part 3</span><span>Asynchronous admission and an owned response</span></a></li><li><a href="chapter-15-part-04.html"><span class="chapter-label">Chapter 15, Part 4</span><span>Pressure, cancellation, and executable checks</span></a></li><li><a href="chapter-16.html"><span class="chapter-label">Chapter 16, Part 1</span><span>Wire bytes and bounded frame decoding</span></a></li><li><a href="chapter-16-part-02.html"><span class="chapter-label">Chapter 16, Part 2</span><span>Sessions that retain resource ownership</span></a></li><li><a href="chapter-16-part-03.html"><span class="chapter-label">Chapter 16, Part 3</span><span>Cancellation-safe clients and loopback commands</span></a></li><li><a href="chapter-16-part-04.html"><span class="chapter-label">Chapter 16, Part 4</span><span>Fragmentation, slow peers, and ambiguity checks</span></a></li><li><a href="chapter-17.html"><span class="chapter-label">Chapter 17, Part 1</span><span>Admission closure and the final owner barrier</span></a></li><li><a href="chapter-17-part-02.html"><span class="chapter-label">Chapter 17, Part 2</span><span>A supervisor that retains its children</span></a></li><li><a href="chapter-17-part-03.html"><span class="chapter-label">Chapter 17, Part 3</span><span>Sessions, commands, and a joined restart</span></a></li><li><a href="chapter-17-part-04.html"><span class="chapter-label">Chapter 17, Part 4</span><span>Controlled shutdown and failure checks</span></a></li><li><a href="chapter-18.html"><span class="chapter-label">Chapter 18, Part 1</span><span>A small reference state for composed failures</span></a></li><li><a href="chapter-18-part-02.html"><span class="chapter-label">Chapter 18, Part 2</span><span>Reproducible owner schedules</span></a></li><li><a href="chapter-18-part-03.html"><span class="chapter-label">Chapter 18, Part 3</span><span>Publication and deletion cuts</span></a></li><li><a href="chapter-18-part-04.html"><span class="chapter-label">Chapter 18, Part 4</span><span>Interrupting recovery again</span></a></li><li><a href="chapter-19.html"><span class="chapter-label">Chapter 19, Part 1</span><span>External expectations and fresh recovery coverage</span></a></li><li><a href="chapter-19-part-02.html"><span class="chapter-label">Chapter 19, Part 2</span><span>Owned child processes and controlled interruption</span></a></li><li><a href="chapter-19-part-03.html"><span class="chapter-label">Chapter 19, Part 3</span><span>Coverage, overload, and safe reclamation</span></a></li><li><a href="chapter-19-part-04.html"><span class="chapter-label">Chapter 19, Part 4</span><span>Executable scenarios and checker counterexamples</span></a></li><li><a href="chapter-20.html"><span class="chapter-label">Chapter 20, Part 1</span><span>Bounded distributions and explicit observation boundaries</span></a></li><li><a href="chapter-20-part-02.html"><span class="chapter-label">Chapter 20, Part 2</span><span>Finite workloads and the index-density candidate</span></a></li><li><a href="chapter-20-part-03.html"><span class="chapter-label">Chapter 20, Part 3</span><span>Recovery, resource sampling, and comparable runs</span></a></li><li><a href="chapter-20-part-04.html"><span class="chapter-label">Chapter 20, Part 4</span><span>Regression checks and the retain-or-revert decision</span></a></li></ol></nav>
+<p class="sidebar-note">Build a single-machine event broker with segmented storage, explicit delivery semantics, bounded resource ownership, crash recovery, and measured performance.</p></aside>
+<main id="main-content" tabindex="-1">
+<div class="breadcrumb"><a href="index.html">Rust Systems Engineering</a><span aria-hidden="true">/</span><span>Chapter 2</span></div>
+<div class="page-actions"><a href="https://github.com/25d-228/rust-learning/issues/3">Read on GitHub</a><a href="source/chapter-02.md">Markdown</a></div>
+<details class="mobile-toc"><summary>In this chapter</summary><ul><li class="toc-h2"><a href="#extend-the-existing-example-workspace">Extend the existing example workspace</a></li><li class="toc-h2"><a href="#a-move-transfers-responsibility-not-the-byte-contents">A move transfers responsibility, not the byte contents</a></li><li class="toc-h2"><a href="#copy-small-values-clone-owned-bytes-deliberately">Copy small values; clone owned bytes deliberately</a></li><li class="toc-h2"><a href="#text-is-a-stronger-promise-than-bytes">Text is a stronger promise than bytes</a></li><li class="toc-h2"><a href="#borrowing-specifies-access-not-a-second-owner">Borrowing specifies access, not a second owner</a></li><li class="toc-h2"><a href="#define-a-small-record-with-a-visible-invariant">Define a small record with a visible invariant</a></li><li class="toc-h2"><a href="#give-the-owner-borrowing-and-consuming-methods">Give the owner borrowing and consuming methods</a></li><li class="toc-h2"><a href="#tie-the-returned-view-to-the-input-borrow">Tie the returned view to the input borrow</a></li><li class="toc-h2"><a href="#copy-only-what-must-survive-the-reuse-boundary">Copy only what must survive the reuse boundary</a></li><li class="toc-h2"><a href="#trace-the-allocations-and-the-copy-cost">Trace the allocations and the copy cost</a></li><li class="toc-h2"><a href="#test-views-mutation-and-ownership-independently">Test views, mutation, and ownership independently</a></li><li class="toc-h2"><a href="#run-the-completed-example-and-its-own-tests">Run the completed example and its own tests</a></li><li class="toc-h2"><a href="#read-a-compiler-rejection-as-an-ownership-trace">Read a compiler rejection as an ownership trace</a></li><li class="toc-h3"><a href="#a-moved-from-name-cannot-inspect-the-new-owners-vector">A moved-from name cannot inspect the new owner&#x27;s vector</a></li><li class="toc-h3"><a href="#a-lifetime-name-cannot-rescue-a-local-allocation">A lifetime name cannot rescue a local allocation</a></li><li class="toc-h3"><a href="#spare-capacity-does-not-permit-mutation-during-a-live-shared-borrow">Spare capacity does not permit mutation during a live shared borrow</a></li><li class="toc-h2"><a href="#diagnose-the-smallest-incorrect-relationship">Diagnose the smallest incorrect relationship</a></li><li class="toc-h2"><a href="#leave-a-runnable-foundation-for-fallible-parsing">Leave a runnable foundation for fallible parsing</a></li></ul></details>
+<p id="math-status" hidden>Some mathematics could not be rendered. The original notation remains visible.</p>
+<article><h1 id="chapter-2-ownership-borrowing-and-lifetime-bound-views">Chapter 2 — Ownership, borrowing, and lifetime-bound views</h1>
+<p>A storage or network buffer has two jobs that eventually conflict: keep bytes available to a reader, and become reusable for the next operation. A reader that merely points into the buffer cannot continue using the old contents after the owner overwrites them. Copying everything avoids that conflict but hides the resource decision. This chapter makes the decision explicit: inspect a borrowed record, copy only the payload that must survive, and then reuse the original storage.</p>
+<p>The program uses one known-valid, four-byte record. It is an ownership exercise, not the broker's disk format or a parser for untrusted input. There is no network, asynchronous runtime, storage file, or external crate.</p>
+<p><strong>Starting point:</strong> <a href="https://25d-228.github.io/rust-learning/chapter-01.html">Chapter 1's workspace</a>, including both Cargo manifests, <code>src/lib.rs</code>, <code>src/byte_summary.rs</code>, and <code>examples/workspace_probe.rs</code>. Keep all five files unchanged. The library still exports <code>summarize(&amp;[u8]) -&gt; (usize, usize, usize)</code> and <code>sum_pair(u8, u8) -&gt; u16</code>; this chapter does not change or require additional library interfaces.</p>
+<p><strong>Implementation time:</strong> 2.5 hours: about 1.75 for the program and focused modifications, and 0.75 for tests and compiler experiments. Reading is separate. Record the time actually spent implementing and debugging.</p>
+<blockquote>
+<p><strong>Learning objectives</strong>
+Distinguish moving an owner from copying data; choose between a shared view, an exclusive mutable view, and an owned result; define a struct and its borrowing or consuming methods; express an input/output lifetime relationship; and diagnose three invalid ownership relationships without adding arbitrary clones or lifetime annotations.</p>
+</blockquote>
+<h2 id="extend-the-existing-example-workspace">Extend the existing example workspace</h2>
+<p>Create one file:</p>
+<figure class="code-block"><figcaption><span class="code-title">New file — relative to the Chapter 1 workspace root</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>crates/language-lab/examples/borrowed_record.rs
+</code></pre></figure>
+<p>All Rust blocks labelled <strong><code>crates/language-lab/examples/borrowed_record.rs</code></strong>, in order, form that file. Each block contains complete functions or declarations. Other code blocks are explicitly labelled as explanations, experiments, or optional additions; do not concatenate them into the program.</p>
+<p>Cargo discovers this example from its location, just as it discovered <code>workspace_probe</code>. The manifests and edition remain unchanged. <code>Vec</code>, <code>String</code>, and <code>drop</code> are available through Rust's standard prelude; no <code>use</code> declarations or dependencies are missing from the main program. The tests have their own imports, supplied below. The <a href="https://doc.rust-lang.org/std/prelude/index.html">prelude documentation</a> describes these automatically available names.</p>
+<p>We will assemble the example before running it. It will have two short introductory functions, an owning record type, a borrowing view type, a view constructor, <code>main</code>, and eight tests. The compiler-failure experiments use separate scratch files so that the working Cargo targets remain buildable.</p>
+<h2 id="a-move-transfers-responsibility-not-the-byte-contents">A move transfers responsibility, not the byte contents</h2>
+<p>For an ordinary owning value, Rust tracks which binding is responsible for its eventual cleanup. Passing that value by value, returning it, or assigning it to another binding can <strong>move</strong> it. After a move, the old binding is not another usable owner. On normal scope exit, the value is dropped through its current owner. These are language rules, not a runtime reference counter; see the Rust Book's <a href="https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html#ownership-rules">ownership discussion</a>.</p>
+<p>Consider a <code>Vec&lt;u8&gt;</code>, a growable sequence of byte values. <code>Vec</code> is a generic type; the angle brackets select <code>u8</code> as the element type. We will define our own generic interfaces in Chapter 4. Here, using the standard container needs no generic implementation of our own.</p>
+<p>A useful conceptual picture separates the vector's handle from its elements:</p>
+<figure class="code-block"><figcaption><span class="code-title">Conceptual storage — not a promised field order or stack address</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>local vector handle: pointer, length, capacity
+                            |
+                            v
+heap allocation:          [99, 0, 255, spare storage ...]
+                           three initialized elements
+</code></pre></figure>
+<p>The standard vector owns a contiguous heap buffer when it has a nonzero byte allocation. Its handle has a fixed size, but that does not make the handle freely duplicable: it carries ownership of that allocation. The handle might be in a stack slot, another object, or optimized into registers. Do not infer ownership from whether a value is described as “on the stack.” Rust does not guarantee the field order shown in this diagram. The <a href="https://doc.rust-lang.org/std/vec/struct.Vec.html#guarantees">vector guarantees</a> distinguish the handle, initialized elements, and spare capacity.</p>
+<p>In the following trace, <code>A</code> names one conceptual allocation, not a real address:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Owner of allocation A</th>
+<th>Valid access through the old name?</th>
+<th>Payload bytes duplicated?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Create <code>original</code></td>
+<td><code>original</code></td>
+<td>Yes</td>
+<td>Initial bytes are written once</td>
+</tr>
+<tr>
+<td><code>let moved = original;</code></td>
+<td><code>moved</code></td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Borrow a slice from <code>moved</code></td>
+<td>Still <code>moved</code></td>
+<td><code>original</code> remains moved</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Drop <code>moved</code> after all borrows end</td>
+<td>None</td>
+<td>No</td>
+<td>No; its allocation is released</td>
+</tr>
+</tbody>
+</table>
+<p>A move need not copy the heap elements, even though moving the handle may involve machine instructions. “Move” describes the ownership change, not an instruction count or a guarantee that no machine word moves.</p>
+<h2 id="copy-small-values-clone-owned-bytes-deliberately">Copy small values; clone owned bytes deliberately</h2>
+<p>Some types implement <strong><code>Copy</code></strong>, a standard trait that permits implicit duplication when a value would otherwise move. A trait describes behavior a type supports; detailed trait definitions come later. Integers such as <code>u8</code> and fixed arrays of <code>Copy</code> elements support this behavior. Ordinary shared references are also <code>Copy</code>: copying a reference makes another reference to the same data, not another allocation. A mutable reference is not <code>Copy</code>. See the <a href="https://doc.rust-lang.org/std/marker/trait.Copy.html"><code>Copy</code> contract</a>.</p>
+<p><code>Vec&lt;u8&gt;</code> does not implement <code>Copy</code>. It does implement <strong><code>Clone</code></strong>: <code>vector.clone()</code> explicitly creates another vector with its own byte contents. That cost is intentional and visible. Do not generalize this into “all cloning deeply copies everything.” The <a href="https://doc.rust-lang.org/std/clone/trait.Clone.html"><code>Clone</code> contract</a> is type-specific; later shared-ownership types clone handles to shared data instead.</p>
+<p>Start <code>borrowed_record.rs</code> with this complete function:</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/examples/borrowed_record.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">fn</span><span class="w"> </span><span class="nf">demonstrate_moves</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">tag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7</span><span class="k">u8</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">copied_tag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tag</span><span class="p">;</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">copied_tag</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"copy: tag={tag} copied={copied_tag}"</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">original</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span><span class="sc">b'c'</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">];</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">moved</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">original</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">cloned</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">moved</span><span class="p">.</span><span class="n">clone</span><span class="p">();</span>
+<span class="w">    </span><span class="n">moved</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">b'd'</span><span class="p">;</span>
+
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">moved</span><span class="p">.</span><span class="n">as_slice</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">cloned</span><span class="p">.</span><span class="n">as_slice</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"move/clone: moved={moved:?} cloned={cloned:?}"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>The suffix in <code>7u8</code> selects an unsigned byte rather than relying on integer inference. <code>vec!</code> is a macro that creates a vector from its listed elements; <code>b'c'</code> is the byte value 99. <code>let mut moved</code> permits mutation through that binding. <code>original</code> did not need <code>mut</code>: permission to mutate is not a permanent property attached to its allocation. The new owner can be bound mutably.</p>
+<p>The assignment to <code>moved[0]</code> changes the original allocation's first element to 100. The cloned vector remains <code>[99, 0, 255]</code>. <code>as_slice()</code> borrows the initialized elements for the assertions. The <code>:?</code> formatting displays a vector's byte values for diagnosis; it does not consume the vector. Both vectors are still valid through their respective bindings until the function ends.</p>
+<p>At normal function return, the two remaining vector owners are dropped. The moved-from binding <code>original</code> does not release the allocation a second time. This is why replacing the move with an untracked, bitwise copy of an owning handle would be wrong: two independently dropped handles would claim one allocation.</p>
+<h2 id="text-is-a-stronger-promise-than-bytes">Text is a stronger promise than bytes</h2>
+<p><code>String</code> owns UTF-8 text. <code>&amp;str</code> borrows UTF-8 text. <code>Vec&lt;u8&gt;</code> and <code>&amp;[u8]</code> carry bytes without claiming those bytes are text. In particular, an embedded zero is an ordinary byte, and 255 is allowed in a byte vector even though it is not a valid byte by itself in UTF-8. The <a href="https://doc.rust-lang.org/std/string/struct.String.html#utf-8"><code>String</code> documentation</a> explains this validity constraint and why a string's length is a byte length.</p>
+<p>Append a second function:</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/examples/borrowed_record.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">fn</span><span class="w"> </span><span class="nf">demonstrate_text</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span><span class="p">::</span><span class="n">from</span><span class="p">(</span><span class="s">"é"</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">label</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">();</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">bytes</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mh">0xc3</span><span class="p">,</span><span class="w"> </span><span class="mh">0xa9</span><span class="p">]);</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">label</span><span class="p">.</span><span class="n">len</span><span class="p">(),</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"text: label={label} bytes={bytes:?} length={}"</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="p">.</span><span class="n">len</span><span class="p">());</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p><code>String::from</code> creates owned text from the string literal. <code>::</code> selects the associated function on the type, whereas <code>label.as_bytes()</code> calls a method on a value. The <code>0x</code> prefix writes a hexadecimal integer: <code>0xc3</code> is 195 and <code>0xa9</code> is 169. The literal here is the single precomposed character <code>é</code>, encoded in two bytes; <code>len()</code> is not a count of displayed characters.</p>
+<p><code>as_bytes()</code> only borrows. This function's <code>bytes</code> points into the storage owned by <code>label</code>; it is not a separately allocated conversion. Indexing a byte slice at a valid byte position does not promise a whole text character. A string slice must additionally end on UTF-8 boundaries, so selecting the first byte of this text is not a valid <code>&amp;str</code>. The <a href="https://doc.rust-lang.org/book/ch04-03-slices.html#string-slices">slice explanation</a> makes that distinction concrete.</p>
+<p>Our record payload <code>[99, 0, 255]</code> intentionally is not text. We will inspect it numerically and will not decode it lossily just to print it. Doing so would change the diagnostic representation of the payload before we had decided whether text was part of its contract.</p>
+<h2 id="borrowing-specifies-access-not-a-second-owner">Borrowing specifies access, not a second owner</h2>
+<p>A shared borrow of our plain byte data permits reading. An exclusive mutable borrow permits reading and writing. A borrow does not take responsibility for freeing the owner's storage. While a shared slice is needed, the owner cannot be used to perform a conflicting mutation; while an exclusive borrow is needed, other overlapping accesses must not conflict with it. The Rust Book's <a href="https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html">borrowing rules</a> supply the language model behind these restrictions.</p>
+<p>The signatures describe different capabilities:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter or result</th>
+<th>Capability in this chapter</th>
+<th>Owns the byte allocation?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Vec&lt;u8&gt;</code></td>
+<td>Receive or return the whole growable buffer by value</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>&amp;[u8]</code></td>
+<td>Read a contiguous byte range</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>&amp;mut [u8]</code></td>
+<td>Exclusively read or overwrite that range; not resize its owner</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>&amp;mut Vec&lt;u8&gt;</code></td>
+<td>Exclusively access the vector, including length-changing operations</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>A slice reference contains a starting location and a length. It does not scan for a terminator, and it does not retain the allocation after its owner is destroyed. <code>&amp;bytes[1..4]</code> borrows indexes 1, 2, and 3; the endpoint 4 is excluded. <code>&amp;mut bytes[1..4]</code> requests mutable access to the same range. The owner remains where it was.</p>
+<p>For these simple references, the borrow checker can usually stop requiring a borrow after its last use, even before the surrounding braces close. The binding's textual scope and the region over which its borrow is required are not identical. A later use can extend that required region and make an intervening mutation invalid. We will exercise exactly that change, rather than treating braces as a magical lifetime repair.</p>
+<h2 id="define-a-small-record-with-a-visible-invariant">Define a small record with a visible invariant</h2>
+<p>The exercise record is exactly four bytes: a one-byte <strong>tag</strong> followed by three payload bytes. The tag is not a length. There are no hidden lengths, alignment padding, checksum, or terminator in this byte layout.</p>
+<figure class="code-block"><figcaption><span class="code-title">The complete first record — hexadecimal values</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>byte index:        0       1       2       3
+contents:         07      63      00      ff
+meaning:         tag     payload bytes
+</code></pre></figure>
+<p>Let <span class="math-input" data-display="false">H</span> be the header size in bytes, <span class="math-input" data-display="false">P</span> the payload size in bytes, and <span class="math-input" data-display="false">T</span> the total record size. For this fixture:</p>
+<div class="math-input" data-display="true">T = H + P = 1 + 3 = 4.</div>
+<p>Let <span class="math-input" data-display="false">b_i</span> denote the byte at record index <span class="math-input" data-display="false">i</span>, and <span class="math-input" data-display="false">p_j</span> the byte at payload index <span class="math-input" data-display="false">j</span>. The range operation implements:</p>
+<div class="math-input" data-display="true">p_j = b_{H+j}, \qquad 0 \leq j &lt; P.</div>
+<p>Thus payload index zero reads record index one, whose value is 99; payload index two reads record index three, whose value is 255. No byte-swapping or integer-width conversion is needed because the header contains only one byte.</p>
+<p>A <strong>struct</strong> groups named fields. Our owning struct contains a vector; our view struct contains a copied tag and a borrowed slice. The Rust Book's <a href="https://doc.rust-lang.org/book/ch05-01-defining-structs.html">struct syntax</a> explains declarations, construction, and field access.</p>
+<p>Append these declarations:</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/examples/borrowed_record.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">const</span><span class="w"> </span><span class="n">HEADER_LEN</span><span class="p">:</span><span class="w"> </span><span class="kt">usize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="k">const</span><span class="w"> </span><span class="n">PAYLOAD_LEN</span><span class="p">:</span><span class="w"> </span><span class="kt">usize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+<span class="k">const</span><span class="w"> </span><span class="n">RECORD_LEN</span><span class="p">:</span><span class="w"> </span><span class="kt">usize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">HEADER_LEN</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">PAYLOAD_LEN</span><span class="p">;</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">OwnedRecord</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">bytes</span><span class="p">:</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">RecordView</span><span class="o">&lt;'</span><span class="na">a</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">tag</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span>
+<span class="w">    </span><span class="n">payload</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">'</span><span class="na">a</span><span class="w"> </span><span class="p">[</span><span class="kt">u8</span><span class="p">],</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p><code>const</code> declares a compile-time constant with an explicit type. <code>[u8; PAYLOAD_LEN]</code>, used shortly, is an array type with exactly three elements; the semicolon separates element type from length. <code>[u8]</code> without that length describes a slice, which we access behind a reference.</p>
+<p><code>OwnedRecord</code> needs no lifetime parameter because its vector owns the bytes. <code>RecordView&lt;'a&gt;</code> does need one: the field <code>payload</code> refers to bytes owned elsewhere. The apostrophe distinguishes a <strong>lifetime parameter</strong> from a type parameter. Read <code>&amp;'a [u8]</code> as “a shared byte slice valid for the borrow region named <code>'a</code>.” It does not mean allocate an object named <code>a</code>, attach a timeout, or extend the owner's life.</p>
+<p>There is deliberately no automatic <code>Copy</code> or <code>Clone</code> derivation on either struct. Reading <code>view.tag</code> copies a <code>u8</code>; reading <code>view.payload</code> copies a shared reference. Those facts do not automatically make the whole <code>RecordView</code> type <code>Copy</code>. We only need the field operations in this exercise.</p>
+<h2 id="give-the-owner-borrowing-and-consuming-methods">Give the owner borrowing and consuming methods</h2>
+<p>An <code>impl Type</code> block defines operations associated with that type. Within it, <code>Self</code> means the type itself. A parameter named <code>self</code> receives an existing instance: <code>&amp;self</code> borrows it, <code>&amp;mut self</code> borrows it exclusively, and <code>self</code> takes it by value. The <a href="https://doc.rust-lang.org/book/ch05-03-method-syntax.html">method syntax reference in the Rust Book</a> explains those receiver choices.</p>
+<p>Our invariant is simple: every usable <code>OwnedRecord</code> constructed here contains exactly four initialized bytes. Construction and replacement accept a three-element array. The methods do not expose vector resizing while the wrapper remains usable.</p>
+<p>Append the entire implementation:</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/examples/borrowed_record.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">impl</span><span class="w"> </span><span class="n">OwnedRecord</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">new</span><span class="p">(</span><span class="n">tag</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="kt">u8</span><span class="p">;</span><span class="w"> </span><span class="n">PAYLOAD_LEN</span><span class="p">])</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">Self</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Vec</span><span class="p">::</span><span class="n">with_capacity</span><span class="p">(</span><span class="n">RECORD_LEN</span><span class="p">);</span>
+<span class="w">        </span><span class="n">bytes</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">tag</span><span class="p">);</span>
+<span class="w">        </span><span class="n">bytes</span><span class="p">.</span><span class="n">extend_from_slice</span><span class="p">(</span><span class="o">&amp;</span><span class="n">payload</span><span class="p">);</span>
+<span class="w">        </span><span class="bp">Self</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">bytes</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">as_bytes</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kp">&amp;</span><span class="p">[</span><span class="kt">u8</span><span class="p">]</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">bytes</span><span class="p">.</span><span class="n">as_slice</span><span class="p">()</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">payload_mut</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="p">[</span><span class="kt">u8</span><span class="p">]</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">bytes</span><span class="p">[</span><span class="n">HEADER_LEN</span><span class="o">..</span><span class="n">RECORD_LEN</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">replace</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">tag</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="kt">u8</span><span class="p">;</span><span class="w"> </span><span class="n">PAYLOAD_LEN</span><span class="p">])</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tag</span><span class="p">;</span>
+<span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">bytes</span><span class="p">[</span><span class="n">HEADER_LEN</span><span class="o">..</span><span class="n">RECORD_LEN</span><span class="p">].</span><span class="n">copy_from_slice</span><span class="p">(</span><span class="o">&amp;</span><span class="n">payload</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">into_bytes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">bytes</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p><code>new</code> has no <code>self</code> parameter because it constructs the instance rather than receiving one. Call it with <code>OwnedRecord::new(...)</code>. <code>Self { bytes }</code> is field-init shorthand for <code>OwnedRecord { bytes: bytes }</code>; it moves the local vector into the returned struct. The payload array contains <code>Copy</code> bytes, so passing that array by value does not transfer a separate heap allocation.</p>
+<p><code>Vec::with_capacity(RECORD_LEN)</code> creates an <strong>empty</strong> vector with room for at least four elements; it does not create four initialized bytes. <code>push</code> adds the tag and <code>extend_from_slice</code> copies the three payload values into the vector. The constructor's length therefore progresses from zero, to one, to four. Capacity is permission to grow without necessarily allocating again, not permission to read uninitialized elements. See <a href="https://doc.rust-lang.org/std/vec/struct.Vec.html#method.with_capacity"><code>with_capacity</code></a>.</p>
+<p><code>as_bytes</code> exposes no mutation. <code>payload_mut</code> exposes only the payload positions, not the tag or the vector's length. An exclusive borrow of a slice permits assigning to its elements; it does not provide <code>push</code> or <code>clear</code> on the owning vector.</p>
+<p><code>replace</code> overwrites the tag and then the existing three-byte payload. The destination slice and the input array have equal lengths by construction. <a href="https://doc.rust-lang.org/std/primitive.slice.html#method.copy_from_slice"><code>copy_from_slice</code></a> requires equal lengths; it copies elements into existing storage rather than allocating a new vector. No runtime length field is being trusted here.</p>
+<p><code>into_bytes</code> consumes the wrapper and returns its vector by value. It moves the allocation's ownership to the caller rather than cloning it. After the call, the old <code>OwnedRecord</code> cannot be used. The caller may resize the returned vector because it no longer claims to be a valid fixed record. This is a useful API distinction: a borrowed view preserves an owner's contract, while a consuming conversion can deliberately leave that contract behind.</p>
+<p>The fields are private to this example's module, not inaccessible to code in the same module. The invariant therefore depends on the supplied code using these methods rather than editing <code>record.bytes</code> directly. Later library modules will give this boundary an actual external caller. We are not claiming that a name containing “Owned” enforces an invariant by itself.</p>
+<h2 id="tie-the-returned-view-to-the-input-borrow">Tie the returned view to the input borrow</h2>
+<p>The view constructor accepts already assembled bytes, checks our fixed-shape programming invariant, and returns a tag plus a payload slice. Append it:</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/examples/borrowed_record.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">fn</span><span class="w"> </span><span class="nf">view_record</span><span class="o">&lt;'</span><span class="na">a</span><span class="o">&gt;</span><span class="p">(</span><span class="n">bytes</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">'</span><span class="na">a</span><span class="w"> </span><span class="p">[</span><span class="kt">u8</span><span class="p">])</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">RecordView</span><span class="o">&lt;'</span><span class="na">a</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span>
+<span class="w">        </span><span class="n">bytes</span><span class="p">.</span><span class="n">len</span><span class="p">(),</span>
+<span class="w">        </span><span class="n">RECORD_LEN</span><span class="p">,</span>
+<span class="w">        </span><span class="s">"fixed record requires exactly four bytes"</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="w">    </span><span class="n">RecordView</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">tag</span><span class="p">:</span><span class="w"> </span><span class="nc">bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+<span class="w">        </span><span class="n">payload</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">bytes</span><span class="p">[</span><span class="n">HEADER_LEN</span><span class="o">..</span><span class="n">RECORD_LEN</span><span class="p">],</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>The assertion precedes indexing. Its purpose is to catch a caller that violates the exercise's “exactly one fixed record” precondition. It is not an acceptable policy for arbitrary network input: Chapter 3 will distinguish incomplete data from invalid data using explicit return values. Both a three-byte input and a five-byte input violate this function's current contract.</p>
+<p>Read the signature in three parts. <code>&lt;'a&gt;</code> declares a lifetime parameter for this function. <code>bytes: &amp;'a [u8]</code> accepts a borrow for that region. <code>-&gt; RecordView&lt;'a&gt;</code> carries the same relationship into the returned struct's slice field. The function returns a view by value, but that view still contains a reference; returning a struct does not make its referenced bytes owned.</p>
+<p>The caller supplies storage whose borrow remains valid for the uses it makes of the view. The function cannot manufacture a longer lifetime or make a borrowed vector survive its own destruction. Lifetimes express constraints checked at compile time; they are not reference counts, hidden copies, or runtime timers. The Rust Book's <a href="https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html#lifetime-annotations-in-function-signatures">lifetime discussion</a> explains this input/output relationship.</p>
+<p>The lifetime chain in this example is:</p>
+<figure class="code-block"><figcaption><span class="code-title">Where the view&#x27;s bytes come from</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>record owns its Vec allocation
+  record.as_bytes() borrows that allocation
+    view_record(...) returns a RecordView
+      view.payload refers to bytes 1 through 3 of that same allocation
+</code></pre></figure>
+<p>The two methods <code>as_bytes</code> and <code>payload_mut</code> omit explicit lifetime names. Rust's <a href="https://doc.rust-lang.org/reference/lifetime-elision.html#lifetime-elision-in-functions">lifetime-elision rules</a> associate a method's elided output-reference lifetime with the borrowed receiver. Here <code>fn as_bytes(&amp;self) -&gt; &amp;[u8]</code> has the same relationship as <code>fn as_bytes&lt;'a&gt;(&amp;'a self) -&gt; &amp;'a [u8]</code>. Omitting the annotation does not omit the constraint.</p>
+<p>For the same reason, the free function could use <code>fn view_record(bytes: &amp;[u8]) -&gt; RecordView&lt;'_&gt;</code>: one input lifetime makes the relationship unambiguous. We retain the explicit <code>'a</code> to make that relationship visible. Do not add <code>'static</code> in an attempt to escape it. A local owned buffer is not made permanent by changing a signature.</p>
+<h2 id="copy-only-what-must-survive-the-reuse-boundary">Copy only what must survive the reuse boundary</h2>
+<p>The main operation has three distinct phases: borrow, detach, mutate. <strong>Detach</strong> here means creating independent owned payload bytes, not just copying the view's reference. <a href="https://doc.rust-lang.org/std/primitive.slice.html#method.to_vec"><code>to_vec</code></a> performs that conversion for a slice. On our byte payload, it copies exactly the three initialized payload values into a new vector.</p>
+<p><code>let saved = first.payload;</code> would only copy a shared reference. The buffer would still have to remain unchanged for the later uses of <code>saved</code>. By contrast, <code>let saved = first.payload.to_vec();</code> creates a <code>Vec&lt;u8&gt;</code> that is no longer tied to the source borrow. The choice is observable in the type, not just the variable name.</p>
+<p>Append the complete executable entry point:</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/examples/borrowed_record.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">demonstrate_moves</span><span class="p">();</span>
+<span class="w">    </span><span class="n">demonstrate_text</span><span class="p">();</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">record</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OwnedRecord</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="sc">b'c'</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">saved</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">view_record</span><span class="p">(</span><span class="n">record</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">());</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">same_payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">first</span><span class="p">.</span><span class="n">payload</span><span class="p">;</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">first</span><span class="p">.</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">same_payload</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">"view: tag={} payload={:?}"</span><span class="p">,</span><span class="w"> </span><span class="n">first</span><span class="p">.</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">first</span><span class="p">.</span><span class="n">payload</span><span class="p">);</span>
+<span class="w">        </span><span class="n">first</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">to_vec</span><span class="p">()</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"saved: {saved:?}"</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">record</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="sc">b'd'</span><span class="p">,</span><span class="w"> </span><span class="sc">b'o'</span><span class="p">,</span><span class="w"> </span><span class="sc">b'g'</span><span class="p">]);</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">reused</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">view_record</span><span class="p">(</span><span class="n">record</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">());</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">reused</span><span class="p">.</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">reused</span><span class="p">.</span><span class="n">payload</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">111</span><span class="p">,</span><span class="w"> </span><span class="mi">103</span><span class="p">]);</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">"reused: tag={} payload={:?}"</span><span class="p">,</span><span class="w"> </span><span class="n">reused</span><span class="p">.</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="n">reused</span><span class="p">.</span><span class="n">payload</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">saved</span><span class="p">.</span><span class="n">as_slice</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">record</span><span class="p">.</span><span class="n">payload_mut</span><span class="p">();</span>
+<span class="w">        </span><span class="n">payload</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">b'D'</span><span class="p">;</span>
+<span class="w">        </span><span class="fm">println!</span><span class="p">(</span><span class="s">"mutable view: {payload:?}"</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">raw</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">record</span><span class="p">.</span><span class="n">into_bytes</span><span class="p">();</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">raw</span><span class="p">.</span><span class="n">as_slice</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">68</span><span class="p">,</span><span class="w"> </span><span class="mi">111</span><span class="p">,</span><span class="w"> </span><span class="mi">103</span><span class="p">]);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"transferred bytes: {raw:?}"</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">capacity_before_clear</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">raw</span><span class="p">.</span><span class="n">capacity</span><span class="p">();</span>
+<span class="w">    </span><span class="n">raw</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+<span class="w">    </span><span class="fm">assert!</span><span class="p">(</span><span class="n">raw</span><span class="p">.</span><span class="n">is_empty</span><span class="p">());</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">raw</span><span class="p">.</span><span class="n">capacity</span><span class="p">(),</span><span class="w"> </span><span class="n">capacity_before_clear</span><span class="p">);</span>
+<span class="w">    </span><span class="nb">drop</span><span class="p">(</span><span class="n">raw</span><span class="p">);</span>
+
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">saved</span><span class="p">.</span><span class="n">as_slice</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"saved after owner drop: {saved:?}"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>A block is an expression. The final line <code>first.payload.to_vec()</code> has no semicolon, so its owned vector becomes the block's value and is bound to <code>saved</code>. Adding a semicolon would discard that value and make the block evaluate to <code>()</code>, the unit type. The borrowed <code>first</code> does not escape this block; only independent bytes do.</p>
+<p><code>same_payload</code> demonstrates the difference: reading <code>first.payload</code> copies a shared slice reference and leaves the field usable, as the next print shows. It does not detach anything. The actual detachment occurs on the following line that calls <code>to_vec</code>.</p>
+<p>The later <code>payload</code> binding is not declared <code>mut</code>, yet <code>payload[0] = b'D'</code> is allowed because its value is an exclusive <code>&amp;mut [u8]</code>. The permission is in the reference type. A <code>mut</code> binding to a shared <code>&amp;[u8]</code> would instead permit rebinding the variable, not writing through that shared reference.</p>
+<p>There are no simultaneous conflicting accesses in this sequence. <code>replace</code> runs after the old shared view is no longer used. The mutable slice is no longer used when <code>into_bytes</code> consumes the owner. Braces make the phases easy to see; the crucial property is which borrows are still required, not merely where we inserted punctuation.</p>
+<p><code>drop(raw)</code> consumes the vector and lets it be destroyed before the final assertion. It is an ordinary function, documented by <a href="https://doc.rust-lang.org/std/mem/fn.drop.html"><code>std::mem::drop</code></a>, not a special lifetime escape. Calling <code>drop</code> on a shared reference would dispose of a copied reference, not the owner. Our final assertion specifically tests data in the <em>other</em>, independently owned vector.</p>
+<h2 id="trace-the-allocations-and-the-copy-cost">Trace the allocations and the copy cost</h2>
+<p>Name the original record's allocation <code>A</code> and the saved payload's allocation <code>B</code>. These names describe ownership; the program does not rely on their numeric addresses.</p>
+<table>
+<thead>
+<tr>
+<th>Moment</th>
+<th>Allocation A: owner and contents</th>
+<th>Allocation B: owner and contents</th>
+<th>Reference still needed into A?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>After construction</td>
+<td><code>record</code>, <code>[7, 99, 0, 255]</code></td>
+<td>Not created</td>
+<td>No</td>
+</tr>
+<tr>
+<td>While inspecting <code>first</code></td>
+<td><code>record</code>, unchanged</td>
+<td>Not created</td>
+<td>Yes: <code>first.payload</code> and its copied reference</td>
+</tr>
+<tr>
+<td>After the <code>saved</code> block</td>
+<td><code>record</code>, unchanged</td>
+<td><code>saved</code>, <code>[99, 0, 255]</code></td>
+<td>No</td>
+</tr>
+<tr>
+<td>After <code>replace</code></td>
+<td><code>record</code>, <code>[8, 100, 111, 103]</code></td>
+<td><code>saved</code>, unchanged</td>
+<td>No old view remains</td>
+</tr>
+<tr>
+<td>During mutable payload access</td>
+<td><code>record</code>, then <code>[8, 68, 111, 103]</code></td>
+<td><code>saved</code>, unchanged</td>
+<td>One exclusive payload borrow</td>
+</tr>
+<tr>
+<td>After <code>into_bytes</code></td>
+<td><code>raw</code>, same four bytes</td>
+<td><code>saved</code>, unchanged</td>
+<td>No</td>
+</tr>
+<tr>
+<td>After <code>raw.clear()</code></td>
+<td><code>raw</code>, zero initialized elements; capacity retained</td>
+<td><code>saved</code>, unchanged</td>
+<td>No</td>
+</tr>
+<tr>
+<td>After <code>drop(raw)</code></td>
+<td>Released by its owner</td>
+<td><code>saved</code>, still valid</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>Let <span class="math-input" data-display="false">L</span> be a vector's initialized length and <span class="math-input" data-display="false">C</span> its reported capacity, both in elements. For our byte vectors, each element occupies one byte. The usable-index condition and spare-capacity count are:</p>
+<div class="math-input" data-display="true">0 \leq i &lt; L \leq C, \qquad \text{spare elements} = C - L.</div>
+<p>With <span class="math-input" data-display="false">L=4</span>, indexes zero through three exist; an allocation with capacity 16 would still not permit reading index four. After <code>clear</code>, the length is zero even though capacity is retained. The program captures and compares actual capacities rather than assuming the allocator returns a particular number. <a href="https://doc.rust-lang.org/std/vec/struct.Vec.html#method.clear"><code>Vec::clear</code></a> removes the elements without changing the capacity; it is not a deallocation or a secure erase.</p>
+<p>The copy decision is similarly explicit. For a buffer containing <span class="math-input" data-display="false">N</span> initialized bytes and a selected payload of <span class="math-input" data-display="false">P</span> bytes, copying the entire buffer duplicates <span class="math-input" data-display="false">N</span> content bytes, whereas <code>payload.to_vec()</code> duplicates <span class="math-input" data-display="false">P</span>. Moving its vector or borrowing a view duplicates no payload bytes. That does <strong>not</strong> say those operations execute zero instructions or that allocation overhead is zero.</p>
+<p>In this example, the choices are four bytes versus three. For a hypothetical 64 KiB input buffer with a selected 1 KiB payload, the content-copy ratio would be:</p>
+<div class="math-input" data-display="true">\frac{65{,}536}{1{,}024} = 64.</div>
+<p>One KiB is 1,024 bytes. The ratio describes copied content, not a measured 64-fold latency improvement. Allocator overhead, metadata, cache behavior, and how long the source must be retained affect the actual tradeoff. A borrowed view avoids the content copy but constrains reuse of its owner. An owned payload pays for independence. Neither choice is universally best.</p>
+<p>At normal scope exit, a struct's fields are dropped recursively. We need no custom destructor to free the <code>Vec</code> inside <code>OwnedRecord</code>; and after <code>into_bytes</code> moves that field out, it is the returned vector that owns cleanup. Rust's <a href="https://doc.rust-lang.org/reference/destructors.html#destructors">destructor rules</a> explain this behavior. Do not confuse it with durability: process termination or abort need not execute destructors, and releasing an in-memory owner does not synchronize a storage file. Recovery will require explicit mechanisms later.</p>
+<h2 id="test-views-mutation-and-ownership-independently">Test views, mutation, and ownership independently</h2>
+<p><code>main</code> provides the visible trace, but small tests isolate mistakes. The following six tests belong to a nested module enabled only when compiling this example as a test target. <code>super</code> names the parent module, so the import reaches the types and function defined above without making them public.</p>
+<p>Append the complete module:</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/examples/borrowed_record.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="cp">#[cfg(test)]</span>
+<span class="k">mod</span><span class="w"> </span><span class="nn">tests</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">use</span><span class="w"> </span><span class="k">super</span><span class="p">::{</span><span class="n">OwnedRecord</span><span class="p">,</span><span class="w"> </span><span class="n">view_record</span><span class="p">};</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">reads_tag_and_binary_payload</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">record</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OwnedRecord</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="sc">b'c'</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">view_record</span><span class="p">(</span><span class="n">record</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">());</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">second</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">view_record</span><span class="p">(</span><span class="n">record</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">());</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">first</span><span class="p">.</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">first</span><span class="p">.</span><span class="n">payload</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">second</span><span class="p">.</span><span class="n">payload</span><span class="p">,</span><span class="w"> </span><span class="n">first</span><span class="p">.</span><span class="n">payload</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">mutable_payload_preserves_the_tag</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">record</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OwnedRecord</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="sc">b'c'</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">record</span><span class="p">.</span><span class="n">payload_mut</span><span class="p">();</span>
+<span class="w">        </span><span class="n">payload</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">b'C'</span><span class="p">;</span>
+<span class="w">        </span><span class="n">payload</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">128</span><span class="p">;</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">record</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="mi">67</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">]);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">replacement_does_not_change_saved_payload</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">record</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OwnedRecord</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="sc">b'c'</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">saved</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">view_record</span><span class="p">(</span><span class="n">record</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">()).</span><span class="n">payload</span><span class="p">.</span><span class="n">to_vec</span><span class="p">();</span>
+<span class="w">        </span><span class="n">record</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="sc">b'd'</span><span class="p">,</span><span class="w"> </span><span class="sc">b'o'</span><span class="p">,</span><span class="w"> </span><span class="sc">b'g'</span><span class="p">]);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">record</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">111</span><span class="p">,</span><span class="w"> </span><span class="mi">103</span><span class="p">]);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">saved</span><span class="p">.</span><span class="n">as_slice</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">copied_payload_outlives_its_source</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">saved</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">record</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OwnedRecord</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="sc">b'c'</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">            </span><span class="n">view_record</span><span class="p">(</span><span class="n">record</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">()).</span><span class="n">payload</span><span class="p">.</span><span class="n">to_vec</span><span class="p">()</span>
+<span class="w">        </span><span class="p">};</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">saved</span><span class="p">.</span><span class="n">as_slice</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">consuming_conversion_returns_the_whole_buffer</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">record</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OwnedRecord</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">raw</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">record</span><span class="p">.</span><span class="n">into_bytes</span><span class="p">();</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">raw</span><span class="p">.</span><span class="n">as_slice</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">capacity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">raw</span><span class="p">.</span><span class="n">capacity</span><span class="p">();</span>
+<span class="w">        </span><span class="n">raw</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">raw</span><span class="p">.</span><span class="n">is_empty</span><span class="p">());</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">raw</span><span class="p">.</span><span class="n">capacity</span><span class="p">(),</span><span class="w"> </span><span class="n">capacity</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">cloned_byte_vectors_can_change_independently</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span><span class="mi">99</span><span class="k">u8</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">];</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">second</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">first</span><span class="p">.</span><span class="n">clone</span><span class="p">();</span>
+<span class="w">        </span><span class="n">first</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span>
+<span class="w">        </span><span class="n">second</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">128</span><span class="p">;</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">first</span><span class="p">.</span><span class="n">as_slice</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">second</span><span class="p">.</span><span class="n">as_slice</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="p">[</span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">]);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>The first test permits two simultaneous shared views, not two owners. The second test deliberately omits an inner scope: the mutable <code>payload</code> is last used before <code>record.as_bytes()</code> creates its shared view, so the access phases do not overlap. Adding a later use of <code>payload</code> after that assertion would change the borrow relationship.</p>
+<p>The replacement test distinguishes a real payload copy from a copied reference. The scope-exit test goes further: its source record is destroyed before the assertion. The conversion test checks that the header travels with the consumed buffer and that clearing does not discard capacity. The clone test changes both copies, so an accidentally shared buffer would violate at least one expectation. None of these tests requires an allocation address or exact allocator capacity.</p>
+<p>Finally, two tests check the fixed-shape precondition. <code>#[should_panic(expected = &quot;...&quot;)]</code> tells the test harness to expect a panic containing the supplied text; an ordinary return makes the test fail. This is a targeted check of a programming assertion, not the error-handling strategy for incoming records. See the <a href="https://doc.rust-lang.org/reference/attributes/testing.html#the-should_panic-attribute">test attribute reference</a>.</p>
+<p>Append this second complete test module:</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/examples/borrowed_record.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="cp">#[cfg(test)]</span>
+<span class="k">mod</span><span class="w"> </span><span class="nn">shape_tests</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">use</span><span class="w"> </span><span class="k">super</span><span class="p">::</span><span class="n">view_record</span><span class="p">;</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="cp">#[should_panic(expected = </span><span class="s">"fixed record requires exactly four bytes"</span><span class="cp">)]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">rejects_a_short_fixed_record</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">view_record</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">]);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="cp">#[should_panic(expected = </span><span class="s">"fixed record requires exactly four bytes"</span><span class="cp">)]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">rejects_extra_bytes</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">view_record</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">9</span><span class="p">]);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>The five-byte case matters: this function does not accept a prefix and return a consumed length. Treating two records or trailing bytes as acceptable would silently change the interface. That capability belongs to the fallible framing exercise in Chapter 3, not a hidden exception in this one.</p>
+<h2 id="run-the-completed-example-and-its-own-tests">Run the completed example and its own tests</h2>
+<p>Run from the existing workspace root:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — format, check, and execute the Chapter 2 target</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>cargo<span class="w"> </span>fmt<span class="w"> </span>--all
+cargo<span class="w"> </span>check<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--all-targets
+cargo<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--example<span class="w"> </span>borrowed_record
+cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--example<span class="w"> </span>borrowed_record
+</code></pre></figure>
+<p>Expected program output, excluding Cargo's build messages:</p>
+<figure class="code-block"><figcaption><span class="code-title">Expected stdout — borrowed_record</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>copy: tag=7 copied=7
+move/clone: moved=[100, 0, 255] cloned=[99, 0, 255]
+text: label=é bytes=[195, 169] length=2
+view: tag=7 payload=[99, 0, 255]
+saved: [99, 0, 255]
+reused: tag=8 payload=[100, 111, 103]
+mutable view: [68, 111, 103]
+transferred bytes: [8, 68, 111, 103]
+saved after owner drop: [99, 0, 255]
+</code></pre></figure>
+<p>The example's test command should report <strong>eight passed tests</strong>: six ownership/data checks and two expected-panic checks. Test order and timing are not part of the expected result. The output shown here specifies expected behavior; compare it with your local run.</p>
+<p>Do not substitute a plain <code>cargo test -p language-lab</code> and assume that it ran the new example's unit tests. Cargo normally builds examples as a compilation check; running their test harnesses requires selecting them. <a href="https://doc.rust-lang.org/cargo/commands/cargo-test.html#target-selection"><code>cargo test</code> target selection</a> documents <code>--example</code> and <code>--all-targets</code>. Running the example's test harness also does not run its ordinary <code>main</code>; that is why both commands appear above.</p>
+<h2 id="read-a-compiler-rejection-as-an-ownership-trace">Read a compiler rejection as an ownership trace</h2>
+<p>The next three programs are deliberately invalid. Keep them outside <code>crates/language-lab/examples/</code> so that checking a failure does not break the working package. From the workspace root, create a scratch directory:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — scratch files for intentional compiler failures</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>mkdir<span class="w"> </span>-p<span class="w"> </span>runs/ownership
+</code></pre></figure>
+<p>Use only the named files created for these experiments, and do not overwrite unrelated work. Their code is independent of the Cargo example. After each rejection, replace that file with its complete repaired version before moving on. Do not leave a broken example in the package, suppress the error, or use <code>unsafe</code> to bypass it. Compiler wording and line numbers vary by version; the ownership conflict is the important result.</p>
+<h3 id="a-moved-from-name-cannot-inspect-the-new-owners-vector">A moved-from name cannot inspect the new owner's vector</h3>
+<p>Create the following scratch file:</p>
+<figure class="code-block"><figcaption><span class="code-title">runs/ownership/use_after_move.rs — intentional failure</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span><span class="mi">7</span><span class="k">u8</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">];</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bytes</span><span class="p">;</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"{bytes:?}"</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"{owner:?}"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>Check it independently:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — expect a nonzero compiler exit</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>rustc<span class="w"> </span>--edition<span class="o">=</span><span class="m">2024</span><span class="w"> </span>runs/ownership/use_after_move.rs<span class="w"> </span>-o<span class="w"> </span>runs/ownership/use_after_move
+</code></pre></figure>
+<p>Expect a use/borrow-of-moved-value diagnostic, normally <a href="https://doc.rust-lang.org/error_codes/E0382.html">E0382</a>, pointing from the later <code>bytes</code> use back to <code>let owner = bytes</code>. The vector was not destroyed at that assignment; it moved. The error prevents the old name from being treated as a second owner.</p>
+<p>Here the intention is one owner, so the repair is to use the current owner, not allocate a clone. Replace the entire file with:</p>
+<figure class="code-block"><figcaption><span class="code-title">runs/ownership/use_after_move.rs — repaired complete file</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span><span class="mi">7</span><span class="k">u8</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">];</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bytes</span><span class="p">;</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"{owner:?}"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>Repeat the compilation command; only after it succeeds, run <code>./runs/ownership/use_after_move</code>. Expect <code>[7, 99, 0, 255]</code>. When both callers genuinely need independent mutable bytes, cloning can be correct; when a second reader only needs temporary access, borrowing can be correct. Neither is automatically the right repair for every move error.</p>
+<h3 id="a-lifetime-name-cannot-rescue-a-local-allocation">A lifetime name cannot rescue a local allocation</h3>
+<p>Create a function that wrongly tries to return a slice into its own local vector:</p>
+<figure class="code-block"><figcaption><span class="code-title">runs/ownership/local_reference.rs — intentional failure</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">fn</span><span class="w"> </span><span class="nf">make_payload</span><span class="o">&lt;'</span><span class="na">a</span><span class="o">&gt;</span><span class="p">()</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kp">&amp;</span><span class="o">'</span><span class="na">a</span><span class="w"> </span><span class="p">[</span><span class="kt">u8</span><span class="p">]</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span><span class="mi">7</span><span class="k">u8</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">];</span>
+<span class="w">    </span><span class="o">&amp;</span><span class="n">bytes</span><span class="p">[</span><span class="mi">1</span><span class="o">..</span><span class="mi">4</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"{:?}"</span><span class="p">,</span><span class="w"> </span><span class="n">make_payload</span><span class="p">());</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>Check it:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — expect a nonzero compiler exit</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>rustc<span class="w"> </span>--edition<span class="o">=</span><span class="m">2024</span><span class="w"> </span>runs/ownership/local_reference.rs<span class="w"> </span>-o<span class="w"> </span>runs/ownership/local_reference
+</code></pre></figure>
+<p>Expect a diagnostic about returning a reference to locally owned data, normally <a href="https://doc.rust-lang.org/error_codes/E0515.html">E0515</a>. The local <code>bytes</code> owner would be dropped when <code>make_payload</code> returns. The unconstrained <code>'a</code> in the signature cannot create storage for the caller's later use. Substituting <code>'static</code> would only make a stronger unsatisfied promise.</p>
+<p>This function is supposed to manufacture data for a caller that supplied no owner. Return ownership. Replace the file with:</p>
+<figure class="code-block"><figcaption><span class="code-title">runs/ownership/local_reference.rs — repaired complete file</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">fn</span><span class="w"> </span><span class="nf">make_payload</span><span class="p">()</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="fm">vec!</span><span class="p">[</span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_payload</span><span class="p">();</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"{payload:?}"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>Repeat the compilation command; after success, run <code>./runs/ownership/local_reference</code>. Expect <code>[99, 0, 255]</code>. The returned vector moves into <code>payload</code>; its bytes are not copied merely because the function returns. When the purpose is instead to view caller-owned storage, accept a borrowed input and tie the result to it, as <code>view_record</code> already does. These are two different interfaces with different owners, not alternative spellings of the same lifetime annotation.</p>
+<h3 id="spare-capacity-does-not-permit-mutation-during-a-live-shared-borrow">Spare capacity does not permit mutation during a live shared borrow</h3>
+<p>Create this third file:</p>
+<figure class="code-block"><figcaption><span class="code-title">runs/ownership/live_borrow.rs — intentional failure</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Vec</span><span class="p">::</span><span class="n">with_capacity</span><span class="p">(</span><span class="mi">16</span><span class="p">);</span>
+<span class="w">    </span><span class="n">bytes</span><span class="p">.</span><span class="n">extend_from_slice</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">7</span><span class="k">u8</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">bytes</span><span class="p">[</span><span class="mi">1</span><span class="o">..</span><span class="mi">4</span><span class="p">];</span>
+<span class="w">    </span><span class="n">bytes</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="mi">9</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"{payload:?}"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>Check it:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — expect a nonzero compiler exit</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>rustc<span class="w"> </span>--edition<span class="o">=</span><span class="m">2024</span><span class="w"> </span>runs/ownership/live_borrow.rs<span class="w"> </span>-o<span class="w"> </span>runs/ownership/live_borrow
+</code></pre></figure>
+<p>Expect a conflicting mutable/immutable borrow diagnostic, normally <a href="https://doc.rust-lang.org/error_codes/E0502.html">E0502</a>. Trace all three points: the slice creates a shared borrow, <code>push</code> needs exclusive access to the vector, and the final print keeps the shared borrow needed across that mutation.</p>
+<p>This fixture intentionally has spare capacity. Even though this particular push can fit, <code>push</code> still requires <code>&amp;mut Vec&lt;u8&gt;</code>; the compiler does not replace that interface with a special permission based on a capacity calculation. With a full vector, growth can also relocate storage and invalidate an address. The borrowing API prevents that entire class of overlapping use rather than asking the caller to guess whether this allocation will move.</p>
+<p>The desired result is to preserve the old payload while allowing mutation, so detach it. Replace the entire file with:</p>
+<figure class="code-block"><figcaption><span class="code-title">runs/ownership/live_borrow.rs — repaired complete file</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">Vec</span><span class="p">::</span><span class="n">with_capacity</span><span class="p">(</span><span class="mi">16</span><span class="p">);</span>
+<span class="w">    </span><span class="n">bytes</span><span class="p">.</span><span class="n">extend_from_slice</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">7</span><span class="k">u8</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">saved</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bytes</span><span class="p">[</span><span class="mi">1</span><span class="o">..</span><span class="mi">4</span><span class="p">].</span><span class="n">to_vec</span><span class="p">();</span>
+<span class="w">    </span><span class="n">bytes</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="mi">9</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"{saved:?}"</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"{bytes:?}"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>Repeat the compilation command; after success, run <code>./runs/ownership/live_borrow</code>. Expect:</p>
+<figure class="code-block"><figcaption><span class="code-title">Expected stdout — repaired live_borrow</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>[99, 0, 255]
+[7, 99, 0, 255, 9]
+</code></pre></figure>
+<p>There is also a no-copy design when the payload is only needed <strong>before</strong> the push: move its print before the mutation and never use that reference afterward. The source owner remains alive, but its shared borrow is no longer required. Predict that result from the last use, not from whether the <code>payload</code> binding is still textually in scope.</p>
+<p>Do not diagnose a failed compilation by executing an older binary at the same output path. Compilation failures can leave a previous successful executable there. Check the compiler's exit status and run only after a successful build. The three repaired scratch files can remain in <code>runs/ownership</code> for comparison; they are not Cargo targets or part of the required book source assets.</p>
+<h2 id="diagnose-the-smallest-incorrect-relationship">Diagnose the smallest incorrect relationship</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>Focused correction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Vec</code> has capacity four but indexing at zero panics</td>
+<td>Capacity was mistaken for initialized length.</td>
+<td>Use <code>push</code>/<code>extend_from_slice</code> to initialize the four bytes.</td>
+</tr>
+<tr>
+<td>The saved value still prevents mutation</td>
+<td><code>saved</code> is a slice reference, not <code>Vec&lt;u8&gt;</code>.</td>
+<td>Inspect the type; use <code>to_vec()</code> at the intended ownership boundary.</td>
+</tr>
+<tr>
+<td>Adding <code>'a</code> or <code>'static</code> does not fix a return</td>
+<td>The returned reference still points into a local owner.</td>
+<td>Return owned bytes, or borrow storage supplied by the caller.</td>
+</tr>
+<tr>
+<td>A payload write fails despite <code>let mut</code></td>
+<td>The value is <code>&amp;[u8]</code>, so only the binding is mutable.</td>
+<td>Obtain <code>&amp;mut [u8]</code> through a legitimately exclusive borrow.</td>
+</tr>
+<tr>
+<td>A later print makes earlier mutation stop compiling</td>
+<td>That print extends the required borrow across the mutation.</td>
+<td>Reorder use, narrow the borrow, or detach the needed bytes.</td>
+</tr>
+<tr>
+<td>A view unexpectedly includes the tag</td>
+<td>The range starts at index zero.</td>
+<td>Use <code>HEADER_LEN..RECORD_LEN</code>; the payload has length three.</td>
+</tr>
+<tr>
+<td>The text example expects length one</td>
+<td>A byte count was treated as a character count.</td>
+<td>Inspect the two UTF-8 bytes; keep binary payloads separate from text.</td>
+</tr>
+<tr>
+<td>Only six tests run</td>
+<td>The command selected the library but not the example's tests.</td>
+<td>Select <code>--example borrowed_record</code> or <code>--all-targets</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>The intended repairs change ownership, access timing, or the interface. They do not silence errors with arbitrary clones, remove inconvenient assertions, or expose raw pointers. A smaller borrow and a clearer owner are often more important than a more elaborate type annotation.</p>
+<h2 id="leave-a-runnable-foundation-for-fallible-parsing">Leave a runnable foundation for fallible parsing</h2>
+<p>As a focused variation, separate the copied scalar header from the borrowed payload. Add this <strong>optional ninth test</strong> inside the existing <code>mod tests</code> block:</p>
+<figure class="code-block"><figcaption><span class="code-title">Optional addition — inside mod tests, not a new module</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="cp">#[test]</span>
+<span class="k">fn</span><span class="w"> </span><span class="nf">a_copied_tag_survives_replacement</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">record</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OwnedRecord</span><span class="p">::</span><span class="n">new</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="sc">b'c'</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">old_tag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">view_record</span><span class="p">(</span><span class="n">record</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">()).</span><span class="n">tag</span><span class="p">;</span>
+<span class="w">    </span><span class="n">record</span><span class="p">.</span><span class="n">replace</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="sc">b'd'</span><span class="p">,</span><span class="w"> </span><span class="sc">b'o'</span><span class="p">,</span><span class="w"> </span><span class="sc">b'g'</span><span class="p">]);</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">old_tag</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">view_record</span><span class="p">(</span><span class="n">record</span><span class="p">.</span><span class="n">as_bytes</span><span class="p">()).</span><span class="n">tag</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>Predict why this compiles without copying a payload: <code>old_tag</code> is a <code>u8</code>, not a reference. Its use does not retain a borrow of the original storage. In contrast, saving <code>.payload</code> without <code>to_vec()</code> and using it after <code>replace</code> would recreate the live-borrow conflict. Run the optional test when added; the example then has nine tests instead of eight. The reference file contains only the eight required tests.</p>
+<p>Finish with the original workspace and the new example intact:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — final cumulative checks</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>cargo<span class="w"> </span>fmt<span class="w"> </span>--all<span class="w"> </span>--<span class="w"> </span>--check
+cargo<span class="w"> </span>check<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--all-targets
+cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--all-targets
+cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--all-targets<span class="w"> </span>--release
+cargo<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--example<span class="w"> </span>workspace_probe
+cargo<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--example<span class="w"> </span>borrowed_record
+</code></pre></figure>
+<p>Without the optional addition, expect the six Chapter 1 library tests plus eight Chapter 2 example tests, <strong>14 in total across separate test executables</strong>. <code>workspace_probe</code> has no unit-test functions of its own; its normal executable still performs the Chapter 1 assertions. Its four output lines are unchanged. <code>borrowed_record</code> produces the nine lines above. A successful test harness run is not evidence that either example's ordinary <code>main</code> ran, so retain both <code>cargo run</code> commands.</p>
+<p>The complete new file is available as <a href="https://25d-228.github.io/rust-learning/media/chapter-02/crates/language-lab/examples/borrowed_record.rs">the Chapter 2 reference example</a>. Place it at the matching <code>examples/</code> path in the Chapter 1 workspace; it is not a second Cargo workspace. The exact code is already present in the filename-labelled blocks above. Build a scratch copy or the learner workspace, not the book's media directory.</p>
+<p>The result is deliberately modest in format and precise in ownership. A view cannot outlive its source borrow; changing a buffer requires ending conflicting borrows; and an owned copy can survive both mutation and destruction of the old owner. <a href="https://25d-228.github.io/rust-learning/index.html#chapter-3-enums-fallible-parsing-and-composed-errors">Chapter 3's planned capability</a> adds explicit incomplete/invalid outcomes, checked lengths, and composed errors to those same boundaries. No fallible parser, storage module, or future helper is required to run this chapter.</p>
+</article>
+<nav class="pager" aria-label="Previous and next chapters"><a href="chapter-01.html"><small>Previous · Chapter 1</small><span>Native workspace, modules, and executable checks</span></a><a href="chapter-03.html"><small>Next · Chapter 3</small><span>Enums, fallible parsing, and composed errors</span></a></nav>
+<footer>Rust Systems Engineering · Chapter 2</footer>
+</main>
+<aside class="page-toc" aria-label="In this chapter"><div class="toc-title">In this chapter</div><ul><li class="toc-h2"><a href="#extend-the-existing-example-workspace">Extend the existing example workspace</a></li><li class="toc-h2"><a href="#a-move-transfers-responsibility-not-the-byte-contents">A move transfers responsibility, not the byte contents</a></li><li class="toc-h2"><a href="#copy-small-values-clone-owned-bytes-deliberately">Copy small values; clone owned bytes deliberately</a></li><li class="toc-h2"><a href="#text-is-a-stronger-promise-than-bytes">Text is a stronger promise than bytes</a></li><li class="toc-h2"><a href="#borrowing-specifies-access-not-a-second-owner">Borrowing specifies access, not a second owner</a></li><li class="toc-h2"><a href="#define-a-small-record-with-a-visible-invariant">Define a small record with a visible invariant</a></li><li class="toc-h2"><a href="#give-the-owner-borrowing-and-consuming-methods">Give the owner borrowing and consuming methods</a></li><li class="toc-h2"><a href="#tie-the-returned-view-to-the-input-borrow">Tie the returned view to the input borrow</a></li><li class="toc-h2"><a href="#copy-only-what-must-survive-the-reuse-boundary">Copy only what must survive the reuse boundary</a></li><li class="toc-h2"><a href="#trace-the-allocations-and-the-copy-cost">Trace the allocations and the copy cost</a></li><li class="toc-h2"><a href="#test-views-mutation-and-ownership-independently">Test views, mutation, and ownership independently</a></li><li class="toc-h2"><a href="#run-the-completed-example-and-its-own-tests">Run the completed example and its own tests</a></li><li class="toc-h2"><a href="#read-a-compiler-rejection-as-an-ownership-trace">Read a compiler rejection as an ownership trace</a></li><li class="toc-h3"><a href="#a-moved-from-name-cannot-inspect-the-new-owners-vector">A moved-from name cannot inspect the new owner&#x27;s vector</a></li><li class="toc-h3"><a href="#a-lifetime-name-cannot-rescue-a-local-allocation">A lifetime name cannot rescue a local allocation</a></li><li class="toc-h3"><a href="#spare-capacity-does-not-permit-mutation-during-a-live-shared-borrow">Spare capacity does not permit mutation during a live shared borrow</a></li><li class="toc-h2"><a href="#diagnose-the-smallest-incorrect-relationship">Diagnose the smallest incorrect relationship</a></li><li class="toc-h2"><a href="#leave-a-runnable-foundation-for-fallible-parsing">Leave a runnable foundation for fallible parsing</a></li></ul></aside>
+</div></body></html>

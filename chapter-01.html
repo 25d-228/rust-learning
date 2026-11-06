@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 1 — Native workspace, modules, and executable checks · Rust Systems Engineering</title>
+<meta name="description" content="Build a single-machine event broker with segmented storage, explicit delivery semantics, bounded resource ownership, crash recovery, and measured performance.">
+<link rel="canonical" href="https://25d-228.github.io/rust-learning/chapter-01.html">
+<link rel="stylesheet" href="assets/code-light.css">
+<link rel="stylesheet" href="assets/course.css">
+<script>window.MathJax = {startup: {typeset: false}, options: {enableMenu: false}, svg: {fontCache: "local"}};</script>
+<script defer src="assets/vendor/tex-svg.js"></script>
+<script defer src="assets/course.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to chapter</a>
+<header class="topbar"><a class="brand" href="index.html"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M14 7C10 3 5 4 2 5v17c4-2 8-1 12 2m0-17c4-4 9-3 12-2v17c-4-2-8-1-12 2V7Z"/></svg><span>Rust Systems Engineering</span></a>
+<div class="header-actions"><a class="desktop-link" href="index.html">Overview</a><a class="desktop-link" href="chapter-01.html">Chapters</a><a class="desktop-link" href="https://github.com/25d-228/rust-learning">Repository</a><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="chapter-nav">Contents</button></div></header>
+<div class="book-layout">
+<aside class="sidebar" id="chapter-nav"><h2 class="sidebar-title">Contents</h2>
+<label for="chapter-filter">Find a chapter</label><input id="chapter-filter" type="search" placeholder="Search chapter titles…" autocomplete="off">
+<nav aria-label="Chapters"><ol><li><a href="index.html"><span class="chapter-label">Roadmap</span><span>A Durable Partitioned Event Broker</span></a></li><li><a href="chapter-01.html" aria-current="page"><span class="chapter-label">Chapter 1</span><span>Native workspace, modules, and executable checks</span></a></li><li><a href="chapter-02.html"><span class="chapter-label">Chapter 2</span><span>Ownership, borrowing, and lifetime-bound views</span></a></li><li><a href="chapter-03.html"><span class="chapter-label">Chapter 3</span><span>Enums, fallible parsing, and composed errors</span></a></li><li><a href="chapter-04.html"><span class="chapter-label">Chapter 4</span><span>Traits, generics, iterators, and bounded collections</span></a></li><li><a href="chapter-05.html"><span class="chapter-label">Chapter 5</span><span>Shared ownership, threads, and synchronization</span></a></li><li><a href="chapter-06.html"><span class="chapter-label">Chapter 6</span><span>Futures, async ownership, and cancellation</span></a></li><li><a href="chapter-07.html"><span class="chapter-label">Chapter 7, Part 1</span><span>Record bytes and typed identities</span></a></li><li><a href="chapter-07-part-02.html"><span class="chapter-label">Chapter 7, Part 2</span><span>File I/O and directory ownership</span></a></li><li><a href="chapter-08.html"><span class="chapter-label">Chapter 8, Part 1</span><span>Segments and sparse record lookup</span></a></li><li><a href="chapter-08-part-02.html"><span class="chapter-label">Chapter 8, Part 2</span><span>Rotation, bounded reads, and storage checks</span></a></li><li><a href="chapter-09.html"><span class="chapter-label">Chapter 9, Part 1</span><span>Dirty-file synchronization and timed mailboxes</span></a></li><li><a href="chapter-09-part-02.html"><span class="chapter-label">Chapter 9, Part 2</span><span>Owned commands and synchronized publication</span></a></li><li><a href="chapter-09-part-03.html"><span class="chapter-label">Chapter 9, Part 3</span><span>Controlled failures and four-partition checks</span></a></li><li><a href="chapter-10.html"><span class="chapter-label">Chapter 10, Part 1</span><span>Validate before repairing</span></a></li><li><a href="chapter-10-part-02.html"><span class="chapter-label">Chapter 10, Part 2</span><span>Publish the startup epoch</span></a></li><li><a href="chapter-10-part-03.html"><span class="chapter-label">Chapter 10, Part 3</span><span>Recovery fixtures and a process interruption</span></a></li><li><a href="chapter-11.html"><span class="chapter-label">Chapter 11, Part 1</span><span>A window that cannot advance through a gap</span></a></li><li><a href="chapter-11-part-02.html"><span class="chapter-label">Chapter 11, Part 2</span><span>Delivery on the partition owner</span></a></li><li><a href="chapter-11-part-03.html"><span class="chapter-label">Chapter 11, Part 3</span><span>Completion orders, bounded reads, and restart checks</span></a></li><li><a href="chapter-12.html"><span class="chapter-label">Chapter 12, Part 1</span><span>Attempts, deadlines, and a bounded retry window</span></a></li><li><a href="chapter-12-part-02.html"><span class="chapter-label">Chapter 12, Part 2</span><span>Clocked reads and owner integration</span></a></li><li><a href="chapter-12-part-03.html"><span class="chapter-label">Chapter 12, Part 3</span><span>Deterministic expiry and restart checks</span></a></li><li><a href="chapter-13.html"><span class="chapter-label">Chapter 13, Part 1</span><span>Checkpoint bytes and validated startup</span></a></li><li><a href="chapter-13-part-02.html"><span class="chapter-label">Chapter 13, Part 2</span><span>Accepted completion and checkpointed progress</span></a></li><li><a href="chapter-13-part-03.html"><span class="chapter-label">Chapter 13, Part 3</span><span>Publication cuts and repeat ranges</span></a></li><li><a href="chapter-14.html"><span class="chapter-label">Chapter 14, Part 1</span><span>Disk reservations and retained-floor metadata</span></a></li><li><a href="chapter-14-part-02.html"><span class="chapter-label">Chapter 14, Part 2</span><span>Segment reclamation and restart reconstruction</span></a></li><li><a href="chapter-14-part-03.html"><span class="chapter-label">Chapter 14, Part 3</span><span>Owner integration and a pressure trace</span></a></li><li><a href="chapter-14-part-04.html"><span class="chapter-label">Chapter 14, Part 4</span><span>Failure cuts and recovery checks</span></a></li><li><a href="chapter-15.html"><span class="chapter-label">Chapter 15, Part 1</span><span>Capacity-owned buffers and reserved lanes</span></a></li><li><a href="chapter-15-part-02.html"><span class="chapter-label">Chapter 15, Part 2</span><span>Bounded storage copies and owner integration</span></a></li><li><a href="chapter-15-part-03.html"><span class="chapter-label">Chapter 15, Part 3</span><span>Asynchronous admission and an owned response</span></a></li><li><a href="chapter-15-part-04.html"><span class="chapter-label">Chapter 15, Part 4</span><span>Pressure, cancellation, and executable checks</span></a></li><li><a href="chapter-16.html"><span class="chapter-label">Chapter 16, Part 1</span><span>Wire bytes and bounded frame decoding</span></a></li><li><a href="chapter-16-part-02.html"><span class="chapter-label">Chapter 16, Part 2</span><span>Sessions that retain resource ownership</span></a></li><li><a href="chapter-16-part-03.html"><span class="chapter-label">Chapter 16, Part 3</span><span>Cancellation-safe clients and loopback commands</span></a></li><li><a href="chapter-16-part-04.html"><span class="chapter-label">Chapter 16, Part 4</span><span>Fragmentation, slow peers, and ambiguity checks</span></a></li><li><a href="chapter-17.html"><span class="chapter-label">Chapter 17, Part 1</span><span>Admission closure and the final owner barrier</span></a></li><li><a href="chapter-17-part-02.html"><span class="chapter-label">Chapter 17, Part 2</span><span>A supervisor that retains its children</span></a></li><li><a href="chapter-17-part-03.html"><span class="chapter-label">Chapter 17, Part 3</span><span>Sessions, commands, and a joined restart</span></a></li><li><a href="chapter-17-part-04.html"><span class="chapter-label">Chapter 17, Part 4</span><span>Controlled shutdown and failure checks</span></a></li><li><a href="chapter-18.html"><span class="chapter-label">Chapter 18, Part 1</span><span>A small reference state for composed failures</span></a></li><li><a href="chapter-18-part-02.html"><span class="chapter-label">Chapter 18, Part 2</span><span>Reproducible owner schedules</span></a></li><li><a href="chapter-18-part-03.html"><span class="chapter-label">Chapter 18, Part 3</span><span>Publication and deletion cuts</span></a></li><li><a href="chapter-18-part-04.html"><span class="chapter-label">Chapter 18, Part 4</span><span>Interrupting recovery again</span></a></li><li><a href="chapter-19.html"><span class="chapter-label">Chapter 19, Part 1</span><span>External expectations and fresh recovery coverage</span></a></li><li><a href="chapter-19-part-02.html"><span class="chapter-label">Chapter 19, Part 2</span><span>Owned child processes and controlled interruption</span></a></li><li><a href="chapter-19-part-03.html"><span class="chapter-label">Chapter 19, Part 3</span><span>Coverage, overload, and safe reclamation</span></a></li><li><a href="chapter-19-part-04.html"><span class="chapter-label">Chapter 19, Part 4</span><span>Executable scenarios and checker counterexamples</span></a></li><li><a href="chapter-20.html"><span class="chapter-label">Chapter 20, Part 1</span><span>Bounded distributions and explicit observation boundaries</span></a></li><li><a href="chapter-20-part-02.html"><span class="chapter-label">Chapter 20, Part 2</span><span>Finite workloads and the index-density candidate</span></a></li><li><a href="chapter-20-part-03.html"><span class="chapter-label">Chapter 20, Part 3</span><span>Recovery, resource sampling, and comparable runs</span></a></li><li><a href="chapter-20-part-04.html"><span class="chapter-label">Chapter 20, Part 4</span><span>Regression checks and the retain-or-revert decision</span></a></li></ol></nav>
+<p class="sidebar-note">Build a single-machine event broker with segmented storage, explicit delivery semantics, bounded resource ownership, crash recovery, and measured performance.</p></aside>
+<main id="main-content" tabindex="-1">
+<div class="breadcrumb"><a href="index.html">Rust Systems Engineering</a><span aria-hidden="true">/</span><span>Chapter 1</span></div>
+<div class="page-actions"><a href="https://github.com/25d-228/rust-learning/issues/2">Read on GitHub</a><a href="source/chapter-01.md">Markdown</a></div>
+<details class="mobile-toc"><summary>In this chapter</summary><ul><li class="toc-h2"><a href="#observe-the-native-toolchain">Observe the native toolchain</a></li><li class="toc-h2"><a href="#give-the-code-one-workspace-and-two-targets">Give the code one workspace and two targets</a></li><li class="toc-h2"><a href="#declare-a-module-before-importing-its-functions">Declare a module before importing its functions</a></li><li class="toc-h2"><a href="#read-the-function-signature-before-writing-the-loop">Read the function signature before writing the loop</a></li><li class="toc-h3"><a href="#trace-the-six-bytes-including-the-last-one">Trace the six bytes, including the last one</a></li><li class="toc-h2"><a href="#widen-the-operands-not-just-the-destination">Widen the operands, not just the destination</a></li><li class="toc-h2"><a href="#call-the-library-from-an-executable">Call the library from an executable</a></li><li class="toc-h2"><a href="#make-boundaries-repeatable-with-unit-tests">Make boundaries repeatable with unit tests</a></li><li class="toc-h2"><a href="#know-what-each-development-command-establishes">Know what each development command establishes</a></li><li class="toc-h2"><a href="#learn-three-different-diagnostics">Learn three different diagnostics</a></li><li class="toc-h3"><a href="#a-path-can-name-the-wrong-crate">A path can name the wrong crate</a></li><li class="toc-h3"><a href="#an-incorrect-expectation-still-type-checks">An incorrect expectation still type-checks</a></li><li class="toc-h3"><a href="#a-wide-return-type-cannot-rescue-narrow-arithmetic">A wide return type cannot rescue narrow arithmetic</a></li><li class="toc-h2"><a href="#diagnose-the-symptom-at-the-correct-layer">Diagnose the symptom at the correct layer</a></li><li class="toc-h2"><a href="#leave-a-working-foundation-for-chapter-2">Leave a working foundation for Chapter 2</a></li></ul></details>
+<p id="math-status" hidden>Some mathematics could not be rendered. The original notation remains visible.</p>
+<article><h1 id="chapter-1-native-workspace-modules-and-executable-checks">Chapter 1 — Native workspace, modules, and executable checks</h1>
+<p>A broker eventually interprets bytes from files and sockets. Before introducing either, we need a smaller capability: put byte-processing code in a library, call it from a separate executable, and distinguish a successful compilation from a correct result. This chapter establishes that workflow with no third-party dependencies.</p>
+<p>The executable examines six bytes. It reports the input length, counts zero bytes, and counts bytes in the range 128 through 255. A second library function adds two byte values without losing the carry. Empty input, the 127/128 boundary, the final element, and the 255/256 arithmetic boundary make useful checks even in this small program.</p>
+<p><strong>Starting point:</strong> basic functions, loops, arrays, and terminal use; no previous Rust code. Create only the <code>language-lab</code> package. The broker and its asynchronous runtime are not prerequisites.</p>
+<p><strong>Implementation time:</strong> 1.5 hours: about 1.0 for environment setup and writing the program, then 0.5 for tests and deliberate diagnostic experiments. Reading is separate. Record the time actually spent implementing and debugging rather than treating this estimate as a requirement.</p>
+<blockquote>
+<p><strong>Learning objectives</strong>
+Build a native Cargo workspace; distinguish packages, crates, modules, and executable targets; read a small Rust function; reason about a loop's index and integer widths; and use a compiler error, an assertion failure, and an overflow failure to diagnose three different mistakes.</p>
+</blockquote>
+<h2 id="observe-the-native-toolchain">Observe the native toolchain</h2>
+<p>Run these commands in a macOS terminal. They inspect the existing installation; they do not change it.</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — inspect the Mac</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>uname<span class="w"> </span>-m
+sw_vers
+xcrun<span class="w"> </span>clang<span class="w"> </span>--version
+rustc<span class="w"> </span>-vV
+cargo<span class="w"> </span>--version
+</code></pre></figure>
+<p>For the intended native Apple-silicon setup, <code>uname -m</code> should report <code>arm64</code>, and the <code>host</code> line in <code>rustc -vV</code> should be <code>aarch64-apple-darwin</code>. The latter is Rust's <a href="https://doc.rust-lang.org/rustc/platform-support/apple-darwin.html">Apple-silicon macOS target</a>, not a Linux target. An <code>x86_64</code> result deserves investigation before collecting performance measurements: check whether the terminal or compiler is running through translation. Do not infer the macOS release from the hardware; <code>sw_vers</code> reports the actual installation.</p>
+<p>Cargo coordinates package builds, tests, and executables; <code>rustc</code> compiles Rust. A complete executable also needs the platform's linker and system libraries. A later <code>cargo run</code> is a more useful installation check than merely seeing a compiler version, because it reaches linking and execution.</p>
+<p>An existing compatible toolchain is sufficient. These manifests select <strong>edition 2024</strong>, which first became available in Rust 1.85. That is a <a href="https://doc.rust-lang.org/edition-guide/rust-2024/index.html">language-mode compatibility boundary</a>, not a recommendation to install that old release. Prefer a maintained stable installation. Rust's <a href="https://rust-lang.org/policies/security/#receiving-security-updates">security policy</a> supports the current stable release; the course does not invent an upstream LTS channel or require nightly features.</p>
+<p>When Rust is absent, the official <a href="https://rust-lang.org/tools/install/">installation instructions</a> provide the <code>rustup</code> installer. On macOS, the documented command is:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — install Rust only when it is missing</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>curl<span class="w"> </span>--proto<span class="w"> </span><span class="s1">'=https'</span><span class="w"> </span>--tlsv1.2<span class="w"> </span>-sSf<span class="w"> </span>https://sh.rustup.rs<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+</code></pre></figure>
+<p>This downloads and executes an installer; review the official instructions before running it. Follow its prompts, reopen the terminal, and repeat <code>rustc -vV</code> and <code>cargo --version</code>. Do not layer another installation over a working one merely to reproduce an example version. When using rustup, <code>rustup show active-toolchain</code> identifies the toolchain selected for the current directory.</p>
+<p>When the Apple tools are absent, <code>xcode-select --install</code> requests Apple's Command Line Tools installation. An existing suitable Xcode installation can already supply them. Use Apple's <a href="https://developer.apple.com/documentation/xcode/installing-the-command-line-tools/">installation guidance</a> rather than guessing a developer-directory path or reinstalling tools after an unrelated Rust error.</p>
+<h2 id="give-the-code-one-workspace-and-two-targets">Give the code one workspace and two targets</h2>
+<p>Use the root of the implementation checkout on <code>work/partition-broker</code>, or a new ordinary directory for this exercise. No remote repository access is needed. All file paths and Cargo commands below are relative to that workspace root. Do not create the learner workspace inside a book-source directory, and do not overwrite an existing unrelated <code>Cargo.toml</code>.</p>
+<p>Create the directories:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — from the chosen workspace root</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>mkdir<span class="w"> </span>-p<span class="w"> </span>crates/language-lab/src<span class="w"> </span>crates/language-lab/examples
+</code></pre></figure>
+<p>The complete source layout for this chapter will be:</p>
+<figure class="code-block"><figcaption><span class="code-title">Chapter 1 workspace</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>Cargo.toml
+crates/
+  language-lab/
+    Cargo.toml
+    src/
+      lib.rs
+      byte_summary.rs
+    examples/
+      workspace_probe.rs
+</code></pre></figure>
+<p>Cargo generates <code>Cargo.lock</code> and <code>target/</code> after a build command. They are not missing source files. Keep the lockfile with the application workspace; ignore build output under <code>/target/</code> in the implementation checkout's <code>.gitignore</code>. Do not add <code>Cargo.lock</code> to the ignore rules. The distinction is that the manifest describes requested dependencies, while Cargo records exact resolved dependencies in the <a href="https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html">lockfile</a>. There are no external dependencies to resolve yet.</p>
+<p>Create the root manifest:</p>
+<figure class="code-block"><figcaption><span class="code-title">Cargo.toml</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">[workspace]</span>
+<span class="n">members</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"crates/language-lab"</span><span class="p">]</span>
+<span class="n">resolver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"3"</span>
+</code></pre></figure>
+<p>A <strong>workspace</strong> groups packages that share a lockfile and build directory. This root is a <strong>virtual manifest</strong>: it has <code>[workspace]</code> but no <code>[package]</code>, so the root itself does not define an executable or library. <code>members</code> names directories containing package manifests. The explicit <code>resolver</code> selects Cargo's dependency-resolution rules; a virtual workspace has no root package edition from which to infer them. See Cargo's <a href="https://doc.rust-lang.org/cargo/reference/workspaces.html#virtual-workspace">workspace reference</a>.</p>
+<p>Now create the member manifest:</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/Cargo.toml</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">[package]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"language-lab"</span>
+<span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"0.1.0"</span>
+<span class="n">edition</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"2024"</span>
+<span class="n">publish</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
+</code></pre></figure>
+<p>This is a <strong>package</strong>: a named collection of build targets described by one manifest. <code>version</code> describes this package, not the compiler. <code>publish = false</code> prevents publishing the package to a registry; it does not prevent local builds. These fields are defined in the <a href="https://doc.rust-lang.org/cargo/reference/manifest.html">manifest reference</a>.</p>
+<p>A <strong>crate</strong> is a Rust compilation unit. Our package supplies a library crate rooted at <code>src/lib.rs</code> and an executable example crate rooted at <code>examples/workspace_probe.rs</code>. A <strong>module</strong> is a namespace inside a crate, not another Cargo package. Cargo discovers these targets from the filenames, so neither a <code>[lib]</code> section nor an <code>[[example]]</code> section is necessary. The package name uses a hyphen in Cargo commands; the library's default Rust name uses an underscore: <code>language_lab</code>. These conventions come from Cargo's <a href="https://doc.rust-lang.org/cargo/reference/cargo-targets.html">target rules</a>.</p>
+<p>The separation will matter immediately. The executable is a client of the library; it does not get access to every private item merely because both targets belong to one package.</p>
+<h2 id="declare-a-module-before-importing-its-functions">Declare a module before importing its functions</h2>
+<p>A module declaration tells the compiler which source belongs to a crate. At this location, <code>mod byte_summary;</code> would load <code>src/byte_summary.rs</code>. Adding <code>pub</code> makes that module available through the library's public interface. A file lying in <code>src/</code> is not automatically imported just because it exists.</p>
+<p>Create the entire library root as follows:</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/src/lib.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">pub</span><span class="w"> </span><span class="k">mod</span><span class="w"> </span><span class="nn">byte_summary</span><span class="p">;</span>
+</code></pre></figure>
+<p>The module's functions will also need <code>pub</code>. Making the module public does not automatically make its contents public. This two-level choice is explained by Rust's <a href="https://doc.rust-lang.org/book/ch07-02-defining-modules-to-control-scope-and-privacy.html">module and privacy rules</a>.</p>
+<p>Once the next section creates <code>byte_summary.rs</code>, the library's paths will be:</p>
+<figure class="code-block"><figcaption><span class="code-title">Names in the library crate</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>language_lab
+  byte_summary
+    summarize
+    sum_pair
+</code></pre></figure>
+<p>Within that library, <code>crate::byte_summary::summarize</code> starts at the current crate's root. Within the <strong>example</strong> crate, the same <code>crate::</code> prefix starts at the example, not at the package's library. The example instead uses <code>language_lab::byte_summary::summarize</code>. <code>::</code> separates path components; it is not a filesystem slash. Rust's <a href="https://doc.rust-lang.org/book/ch07-03-paths-for-referring-to-an-item-in-the-module-tree.html">path rules</a> make this distinction explicit.</p>
+<h2 id="read-the-function-signature-before-writing-the-loop">Read the function signature before writing the loop</h2>
+<p>We will use this interface:</p>
+<figure class="code-block"><figcaption><span class="code-title">The summary interface</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>summarize(bytes: &amp;[u8]) -&gt; (usize, usize, usize)
+                           length  zeros  high bytes
+</code></pre></figure>
+<p><code>u8</code> is an unsigned eight-bit integer, so one value represents one byte from 0 through 255. <code>usize</code> is the unsigned integer type used for lengths and indexing; its width depends on the target. <code>-&gt;</code> introduces the return type. Parentheses with three comma-separated types describe a <strong>tuple</strong>: three values returned together in a fixed order. Arrays, tuples, and integer widths are introduced in the Rust Book's <a href="https://doc.rust-lang.org/book/ch03-02-data-types.html">data-type discussion</a>.</p>
+<p><code>&amp;[u8]</code> is a shared reference to a byte slice. A slice describes a contiguous sequence with a length; it does not use a zero byte as a terminator. The caller retains its data, and this function only reads it. Passing <code>&amp;fixture</code> lets an array be viewed as a slice without allocating or copying the array. This is the small amount of borrowing needed here; Chapter 2 will examine moves, mutation, and reference lifetimes explicitly. See the official <a href="https://doc.rust-lang.org/book/ch04-03-slices.html#other-slices">slice introduction</a>.</p>
+<p>For the implementation, <code>let</code> introduces a binding. A binding cannot normally be reassigned unless declared with <code>mut</code>; the counters change, so they will use <code>let mut</code>. <code>let byte</code> does not need <code>mut</code>, because each loop iteration introduces a new local value rather than reassigning an old one. An annotation such as <code>: usize</code> fixes the type instead of leaving it to inference. These are the standard <a href="https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html">binding and mutability rules</a>.</p>
+<p>A <code>while</code> loop repeats while its condition is <code>true</code>. <code>if</code> runs its body only when its condition is <code>true</code>; integer values are not implicitly treated as Booleans. <code>+= 1</code> updates a counter. We deliberately begin with an explicit index rather than an iterator adapter, so the valid indexing range is visible. Iterators will be taught before they become part of the main implementation. The relevant language rules are in <a href="https://doc.rust-lang.org/book/ch03-05-control-flow.html">control flow</a>.</p>
+<p>A function definition starts with <code>fn</code>; <code>pub fn</code> makes that function public. Braces delimit its body. <code>.len()</code> calls the slice's length method, and <code>bytes[index]</code> selects one element. A line starting with <code>///</code> documents the following item rather than executing.</p>
+<p>Create <code>byte_summary.rs</code> with this complete first function. Subsequent blocks marked with this same filename are appended to it in order.</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/src/byte_summary.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="sd">/// Returns (input length, zero-byte count, count of bytes at least 128).</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">summarize</span><span class="p">(</span><span class="n">bytes</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="p">[</span><span class="kt">u8</span><span class="p">])</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="kt">usize</span><span class="p">,</span><span class="w"> </span><span class="kt">usize</span><span class="p">,</span><span class="w"> </span><span class="kt">usize</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">index</span><span class="p">:</span><span class="w"> </span><span class="kt">usize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">zeros</span><span class="p">:</span><span class="w"> </span><span class="kt">usize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">high_bytes</span><span class="p">:</span><span class="w"> </span><span class="kt">usize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="n">index</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">bytes</span><span class="p">.</span><span class="n">len</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">byte</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bytes</span><span class="p">[</span><span class="n">index</span><span class="p">];</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">byte</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">zeros</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">byte</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">128</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">high_bytes</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="n">index</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="p">(</span><span class="n">bytes</span><span class="p">.</span><span class="n">len</span><span class="p">(),</span><span class="w"> </span><span class="n">zeros</span><span class="p">,</span><span class="w"> </span><span class="n">high_bytes</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p><code>bytes[index]</code> reads one <code>u8</code> value; copying this integer does not copy the whole slice. The function creates no heap buffer and changes no caller-owned byte.</p>
+<p>The last tuple has <strong>no semicolon</strong>. Rust functions can return the value of their final expression. A semicolon would discard that value and leave the body returning the unit value, written <code>()</code>, which would disagree with the declared tuple return type. <code>return (bytes.len(), zeros, high_bytes);</code> would also work, but the final-expression form makes this straight-line ending simpler. This distinction is covered by the Rust Book's <a href="https://doc.rust-lang.org/book/ch03-03-how-functions-work.html#statements-and-expressions">function and expression explanation</a>.</p>
+<h3 id="trace-the-six-bytes-including-the-last-one">Trace the six bytes, including the last one</h3>
+<p>Our fixture is <code>[0, 65, 127, 128, 255, 0]</code>. Its length is six, so the valid indexes are zero through five. A zero byte is ordinary input, not an instruction to stop. The high-byte count uses the <strong>inclusive</strong> threshold 128.</p>
+<table>
+<thead>
+<tr>
+<th>Index read</th>
+<th style="text-align:right">Value</th>
+<th style="text-align:right">Zeros after this iteration</th>
+<th style="text-align:right">High bytes after this iteration</th>
+<th style="text-align:right">Next index</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>1</td>
+<td style="text-align:right">65</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">2</td>
+</tr>
+<tr>
+<td>2</td>
+<td style="text-align:right">127</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">3</td>
+</tr>
+<tr>
+<td>3</td>
+<td style="text-align:right">128</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">4</td>
+</tr>
+<tr>
+<td>4</td>
+<td style="text-align:right">255</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">5</td>
+</tr>
+<tr>
+<td>5</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">6</td>
+</tr>
+</tbody>
+</table>
+<p>At index six, <code>index &lt; bytes.len()</code> is false. The function returns <code>(6, 2, 2)</code> without reading <code>bytes[6]</code>. Safe slice indexing would panic on an out-of-bounds index; it is not a request to read adjacent memory. The <a href="https://doc.rust-lang.org/std/primitive.slice.html">slice API</a> documents length and indexing behavior.</p>
+<p>Let <span class="math-input" data-display="false">n</span> mean the slice length and <span class="math-input" data-display="false">i</span> the next index to read. Let <span class="math-input" data-display="false">z_i</span> and <span class="math-input" data-display="false">h_i</span> be the zero and high-byte counts after the first <span class="math-input" data-display="false">i</span> bytes have been examined. Because no byte can be both zero and at least 128, the loop maintains:</p>
+<div class="math-input" data-display="true">0 \le z_i + h_i \le i \le n.</div>
+<p>Initially all three counters are zero. An iteration is entered only when <span class="math-input" data-display="false">i&lt;n</span>, reads exactly element <span class="math-input" data-display="false">i</span>, increments at most one classification count, and then increases <span class="math-input" data-display="false">i</span> by one. At exit <span class="math-input" data-display="false">i=n</span>. For an empty slice, <span class="math-input" data-display="false">n=0</span> and the loop is never entered; the return value is <code>(0, 0, 0)</code>.</p>
+<p>This also explains why the counters fit: none exceeds a length already represented as <code>usize</code>. The implementation scans each byte once and uses a fixed number of local counters, with no allocation proportional to input length. This describes the algorithm, not a measured throughput result. Counting high bytes is not UTF-8 validation, and the summary is not a storage checksum.</p>
+<h2 id="widen-the-operands-not-just-the-destination">Widen the operands, not just the destination</h2>
+<p>A byte can hold 255, but the sum of two bytes can exceed 255. Our second function returns the exact mathematical sum as <code>u16</code>, an unsigned sixteen-bit integer. For byte inputs <span class="math-input" data-display="false">a</span> and <span class="math-input" data-display="false">b</span>:</p>
+<div class="math-input" data-display="true">0 \le a,b \le 255,
+\qquad
+0 \le a+b \le 510 &lt; 2^{16}.</div>
+<p>Thus converting both inputs to <code>u16</code> <strong>before</strong> adding makes every possible result representable. <code>u16::from(value)</code> is an associated conversion function: the type before <code>::</code> names the destination. The standard library supplies this lossless conversion from <code>u8</code>. It uses the <a href="https://doc.rust-lang.org/std/convert/trait.From.html"><code>From</code> conversion interface</a>; we are calling an existing implementation, not defining a trait yet.</p>
+<p>Append this complete function to <code>byte_summary.rs</code>:</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/src/byte_summary.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="sd">/// Returns the exact sum of two byte values, including a possible carry.</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">sum_pair</span><span class="p">(</span><span class="n">left</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u16</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">u16</span><span class="p">::</span><span class="n">from</span><span class="p">(</span><span class="n">left</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="kt">u16</span><span class="p">::</span><span class="n">from</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>For inputs 255 and 1, the conversions produce two <code>u16</code> operands, 255 and 1; their addition produces 256. This adds <strong>values</strong>. It does not decode two adjacent bytes into a little-endian or big-endian integer.</p>
+<p>A wider return type does not retroactively widen an earlier operation. In <code>u16::from(left + right)</code>, the addition still happens on the two <code>u8</code> operands first. The diagnostic experiment below will expose that difference. For general record lengths later in the book, widening alone is not a complete overflow strategy: the permitted input ranges and the destination width must still justify the arithmetic.</p>
+<h2 id="call-the-library-from-an-executable">Call the library from an executable</h2>
+<p>The example needs the library's two functions. A <code>use</code> declaration brings their paths into scope, allowing the short names in later calls. The braces in <code>use language_lab::byte_summary::{summarize, sum_pair};</code> group two imports from the same module. This does not paste source text into the example or create another copy of the module.</p>
+<p><code>fn main()</code> is this executable's entry point. The array type <code>[u8; 6]</code> means six <code>u8</code> elements, with the length known at compile time. <code>b'A'</code> is a single-byte literal whose value is 65; it is not the Unicode character literal <code>'A'</code>, which has type <code>char</code>.</p>
+<p>A binding such as <code>let (length, zeros, high_bytes) = summarize(&amp;fixture);</code> <strong>destructures</strong> the returned tuple, giving a name to each component. The <code>&amp;</code> at the call site creates the shared reference accepted by the function. The array remains usable afterward.</p>
+<p>Three macros appear below. The <code>!</code> distinguishes a macro invocation from an ordinary function call. <code>assert_eq!</code> checks two expressions for equality and reports their values when they differ. <code>assert!</code> requires a Boolean condition to be true. These checks remain active in release builds; they are not <code>debug_assert!</code> checks. <code>println!</code> writes formatted text followed by a newline; <code>{length}</code> substitutes the named value. See the standard <a href="https://doc.rust-lang.org/std/macro.assert_eq.html"><code>assert_eq!</code></a> and <a href="https://doc.rust-lang.org/std/macro.println.html"><code>println!</code></a> documentation.</p>
+<p>Create the entire example file:</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/examples/workspace_probe.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">use</span><span class="w"> </span><span class="n">language_lab</span><span class="p">::</span><span class="n">byte_summary</span><span class="p">::{</span><span class="n">sum_pair</span><span class="p">,</span><span class="w"> </span><span class="n">summarize</span><span class="p">};</span>
+
+<span class="k">fn</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">fixture</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="kt">u8</span><span class="p">;</span><span class="w"> </span><span class="mi">6</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="sc">b'A'</span><span class="p">,</span><span class="w"> </span><span class="mi">127</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">];</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">length</span><span class="p">,</span><span class="w"> </span><span class="n">zeros</span><span class="p">,</span><span class="w"> </span><span class="n">high_bytes</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="n">fixture</span><span class="p">);</span>
+
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">length</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">zeros</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">high_bytes</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">assert!</span><span class="p">(</span><span class="n">zeros</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">high_bytes</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">length</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">fixture</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="sc">b'A'</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">carry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum_pair</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">maximum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum_pair</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">carry</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">maximum</span><span class="p">,</span><span class="w"> </span><span class="mi">510</span><span class="p">);</span>
+
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"bytes={length} zero={zeros} high={high_bytes}"</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"sum_pair(255, 1)={carry}"</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"sum_pair(255, 255)={maximum}"</span><span class="p">);</span>
+<span class="w">    </span><span class="fm">println!</span><span class="p">(</span><span class="s">"workspace probe: ok"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>The actual import orders <code>sum_pair</code> before <code>summarize</code>, which is the order rustfmt normally chooses. The order has no effect on the meaning of the paths.</p>
+<p>The fixture lives in <code>main</code>'s scope. During <code>summarize</code>, the library reads through a temporary shared reference and returns only integer counts. It stores no reference to the fixture. By the later <code>fixture[1]</code> assertion, that function call has finished and the array is still present. There is no file, socket, background worker, or manually allocated buffer to clean up. The operating system still owns the process's standard output; printing is not evidence of a disk synchronization boundary.</p>
+<p>The assertions intentionally precede the output. A wrong count should stop this diagnostic program rather than print the final success line. A <strong>panic</strong> signals a violated assertion and terminates this simple executable with a nonzero status; the test harness introduced next can instead record a test's panic as a failure. Returned errors for malformed external input will be introduced in Chapter 3. Do not use this demonstration's assertions as a substitute for fallible protocol parsing.</p>
+<p>Run the executable from the workspace root:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — build, link, and run the example</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>cargo<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--example<span class="w"> </span>workspace_probe
+</code></pre></figure>
+<p><code>-p</code> selects the package by its manifest name. <code>--example</code> selects the example target by the filename stem, without <code>.rs</code>. A plain <code>cargo run -p language-lab</code> is not equivalent: this package has no default binary target in <code>src/main.rs</code>.</p>
+<p>Expected program output, excluding Cargo's build messages:</p>
+<figure class="code-block"><figcaption><span class="code-title">Expected standard output</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>bytes=6 zero=2 high=2
+sum_pair(255, 1)=256
+sum_pair(255, 255)=510
+workspace probe: ok
+</code></pre></figure>
+<p>Do not compare compilation durations or temporary build paths with somebody else's output. The four program lines, assertion results, and successful exit are the meaningful checks here.</p>
+<h2 id="make-boundaries-repeatable-with-unit-tests">Make boundaries repeatable with unit tests</h2>
+<p>The example checks one mixed fixture and two sums. Library tests make individual boundaries independently repeatable, without depending on the example's <code>main</code> function.</p>
+<p>An <strong>attribute</strong> is metadata beginning with <code>#[...]</code>. <code>#[cfg(test)]</code> includes the following module when the library is compiled for tests, and leaves it out of an ordinary library build. <code>#[test]</code> identifies a function that the test runner should execute. Inside the nested <code>tests</code> module, <code>super</code> refers to its parent module, <code>byte_summary</code>; the grouped <code>use</code> imports the two functions being tested. Rust's <a href="https://doc.rust-lang.org/book/ch11-03-test-organization.html#unit-tests">test organization</a> and <a href="https://doc.rust-lang.org/book/ch11-01-writing-tests.html#structuring-test-functions">test-function introduction</a> explain these mechanisms.</p>
+<p>The tests introduce one additional array notation: <code>[0; 4]</code> constructs four zero bytes. In contrast, <code>[u8; 4]</code> in a type annotation describes an array's element type and length. In <code>summarize(&amp;[])</code>, the parameter type supplies enough context to infer an empty byte array.</p>
+<p>Append this whole test module after <code>sum_pair</code> in <code>byte_summary.rs</code>. This is the third and final block for that file.</p>
+<figure class="code-block"><figcaption><span class="code-title">crates/language-lab/src/byte_summary.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="cp">#[cfg(test)]</span>
+<span class="k">mod</span><span class="w"> </span><span class="nn">tests</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">use</span><span class="w"> </span><span class="k">super</span><span class="p">::{</span><span class="n">sum_pair</span><span class="p">,</span><span class="w"> </span><span class="n">summarize</span><span class="p">};</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">empty_input_is_zero</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[]),</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">counts_mixed_fixture</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">fixture</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="kt">u8</span><span class="p">;</span><span class="w"> </span><span class="mi">6</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="sc">b'A'</span><span class="p">,</span><span class="w"> </span><span class="mi">127</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">];</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="n">fixture</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">classifies_threshold_and_extremes</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">127</span><span class="p">]),</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">128</span><span class="p">]),</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">));</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">255</span><span class="p">]),</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">counts_repeated_values</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="mi">4</span><span class="p">]),</span><span class="w"> </span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">255</span><span class="p">;</span><span class="w"> </span><span class="mi">4</span><span class="p">]),</span><span class="w"> </span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">visits_final_byte</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">65</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">]),</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">65</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">]),</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cp">#[test]</span>
+<span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">widens_before_addition</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">sum_pair</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">sum_pair</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span><span class="w"> </span><span class="mi">255</span><span class="p">);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">sum_pair</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">),</span><span class="w"> </span><span class="mi">255</span><span class="p">);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">sum_pair</span><span class="p">(</span><span class="mi">254</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="mi">255</span><span class="p">);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">sum_pair</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="mi">256</span><span class="p">);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">sum_pair</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">),</span><span class="w"> </span><span class="mi">256</span><span class="p">);</span>
+<span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">sum_pair</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">),</span><span class="w"> </span><span class="mi">510</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>The mixed fixture alone would not tell us which rule failed. The singleton 127 and 128 cases isolate the threshold. The empty case tests the loop entry condition. The two-element cases put the only counted byte at the very end. Repeated values ensure counters increase more than once. The addition tests cross the boundary in both operand orders rather than testing only sums below 256.</p>
+<p>Run the tests:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — execute the library tests</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-p<span class="w"> </span>language-lab
+</code></pre></figure>
+<p>Expected: six unit tests pass, none fail. With these files there are no documentation code examples to test, so the documentation-test phase has zero tests. Test order, durations, and Cargo's executable paths can vary. The unit-test count refers to the six <code>#[test]</code> functions, not to the number of <code>assert_eq!</code> calls.</p>
+<blockquote>
+<p><strong>Note</strong>
+With these default target settings, <code>cargo test</code> compiles the example to check that it still builds, but does not execute its <code>main</code>. A passing test run is not a substitute for <code>cargo run -p language-lab --example workspace_probe</code>. Cargo documents this distinction in its <a href="https://doc.rust-lang.org/cargo/commands/cargo-test.html#target-selection">test target selection</a>.</p>
+</blockquote>
+<h2 id="know-what-each-development-command-establishes">Know what each development command establishes</h2>
+<p>Use the following sequence after the files are complete:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — routine development checks</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>cargo<span class="w"> </span>fmt<span class="w"> </span>--all
+cargo<span class="w"> </span>fmt<span class="w"> </span>--all<span class="w"> </span>--<span class="w"> </span>--check
+cargo<span class="w"> </span>check<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--all-targets
+cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-p<span class="w"> </span>language-lab
+cargo<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--example<span class="w"> </span>workspace_probe
+</code></pre></figure>
+<p><code>cargo fmt --all</code> edits Rust source formatting. The following <code>--check</code> form reports whether formatting changes are still needed, without applying them. The <code>--</code> separator passes the following option to rustfmt. Formatting does not validate behavior. If the formatter is missing from a rustup-managed installation, add its component with <code>rustup component add rustfmt</code>; another installation method may provide the component differently. See the <a href="https://doc.rust-lang.org/cargo/commands/cargo-fmt.html">formatter command</a> and <a href="https://rust-lang.github.io/rustup/concepts/components.html">rustup components</a>.</p>
+<p><code>cargo check</code> performs compilation checks without the final code-generation work needed to produce an executable. <code>--all-targets</code> includes the example and test targets, rather than only the ordinary library. It neither links a runnable program nor executes assertions; some errors only appear during later code generation or linking. These limits are described in the <a href="https://doc.rust-lang.org/cargo/commands/cargo-check.html"><code>cargo check</code> reference</a>.</p>
+<p>For this workspace, the distinctions are:</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What to learn from success</th>
+<th>What remains unchecked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cargo fmt --all -- --check</code></td>
+<td>The source satisfies the installed formatter.</td>
+<td>Types, linking, and results.</td>
+</tr>
+<tr>
+<td><code>cargo check -p language-lab --all-targets</code></td>
+<td>The selected Rust targets pass compiler checking.</td>
+<td>Final executable generation and execution.</td>
+</tr>
+<tr>
+<td><code>cargo test -p language-lab</code></td>
+<td>The six library tests run successfully.</td>
+<td>The example's <code>main</code> is not run under these settings.</td>
+</tr>
+<tr>
+<td><code>cargo run -p language-lab --example workspace_probe</code></td>
+<td>The example links and its assertions execute.</td>
+<td>Inputs and behaviors not covered by that example.</td>
+</tr>
+</tbody>
+</table>
+<p>A clean check is useful because it is fast feedback, not because it proves every property. The next experiments deliberately separate these outcomes.</p>
+<h2 id="learn-three-different-diagnostics">Learn three different diagnostics</h2>
+<p>Make only one temporary change at a time. Run the named command, understand the result, and restore the correct code before proceeding. Do not leave intentionally broken examples in the workspace or disable tests to make the output green.</p>
+<h3 id="a-path-can-name-the-wrong-crate">A path can name the wrong crate</h3>
+<p>Temporarily replace the import at the top of <code>workspace_probe.rs</code> with:</p>
+<figure class="code-block"><figcaption><span class="code-title">Temporary incorrect import — in workspace_probe.rs</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">use</span><span class="w"> </span><span class="k">crate</span><span class="p">::</span><span class="n">byte_summary</span><span class="p">::{</span><span class="n">sum_pair</span><span class="p">,</span><span class="w"> </span><span class="n">summarize</span><span class="p">};</span>
+</code></pre></figure>
+<p>Run:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — check the example&#x27;s paths</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>cargo<span class="w"> </span>check<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--example<span class="w"> </span>workspace_probe
+</code></pre></figure>
+<p>Expected: an unresolved-import diagnostic points at <code>crate::byte_summary</code>. Here <code>crate</code> is the example crate, which has no such module. The filesystem location of the library inside the same package does not change the meaning of <code>crate</code>.</p>
+<p>Restore the import to <code>use language_lab::byte_summary::{sum_pair, summarize};</code> and run the same command again. Do not fix this by copying <code>byte_summary.rs</code> into <code>examples/</code> or by adding a second <code>mod byte_summary;</code> declaration there. That would create another module rather than use the library's public API.</p>
+<p>A different diagnostic, “file not found for module,” points to the declaration in <code>src/lib.rs</code>: verify the exact filename <code>src/byte_summary.rs</code>. An “item is private” diagnostic instead means the module or function is missing the intended <code>pub</code>. These errors arise at different boundaries even when all three prevent a call from compiling.</p>
+<h3 id="an-incorrect-expectation-still-type-checks">An incorrect expectation still type-checks</h3>
+<p>Inside <code>widens_before_addition</code>, temporarily change just this test assertion:</p>
+<figure class="code-block"><figcaption><span class="code-title">Temporary incorrect expectation — inside widens_before_addition</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">sum_pair</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="mi">255</span><span class="p">);</span>
+</code></pre></figure>
+<p>Run the compiler check, then the single selected test:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — compile first, execute second</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>cargo<span class="w"> </span>check<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--all-targets
+cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>byte_summary::tests::widens_before_addition<span class="w"> </span>--<span class="w"> </span>--exact
+</code></pre></figure>
+<p>The check is expected to succeed: the call and comparison have compatible types. The test is expected to fail, with the important values:</p>
+<figure class="code-block"><figcaption><span class="code-title">Expected assertion diagnostic — excerpt</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>assertion `left == right` failed
+  left: 256
+ right: 255
+</code></pre></figure>
+<p>“Left” means the assertion's first expression, our computed result; “right” means the second, our stated expectation. The arithmetic is correct in this experiment. Changing the library to return 255 would make the deliberately wrong test pass while breaking its contract. Restore the expected value to 256.</p>
+<p>The filter before <code>--</code> selects a test name. <code>--exact</code> is passed to the test runner and requires the full name to match. This selected run should execute one unit test, with five filtered out. A report of zero matching tests is not a successful run of the intended test.</p>
+<p>For a failing test with more calls to inspect, the same command can request a backtrace:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — request a backtrace for a failure</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="nv">RUST_BACKTRACE</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>byte_summary::tests::widens_before_addition<span class="w"> </span>--<span class="w"> </span>--exact
+</code></pre></figure>
+<p>Read the first frame in your own source and the failed assertion before following library internals. Backtrace paths and formatting depend on the compiler and platform; do not expect a particular address or source-line number.</p>
+<h3 id="a-wide-return-type-cannot-rescue-narrow-arithmetic">A wide return type cannot rescue narrow arithmetic</h3>
+<p>With all test expectations restored, temporarily replace only the implementation of <code>sum_pair</code> with:</p>
+<figure class="code-block"><figcaption><span class="code-title">Temporary incorrect function — replace sum_pair only</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">sum_pair</span><span class="p">(</span><span class="n">left</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="p">:</span><span class="w"> </span><span class="kt">u8</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="kt">u16</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">u16</span><span class="p">::</span><span class="n">from</span><span class="p">(</span><span class="n">left</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">right</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></figure>
+<p>Run:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — exercise the arithmetic boundary</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>cargo<span class="w"> </span>check<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--all-targets
+cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>byte_summary::tests::widens_before_addition<span class="w"> </span>--<span class="w"> </span>--exact
+cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--release<span class="w"> </span>byte_summary::tests::widens_before_addition<span class="w"> </span>--<span class="w"> </span>--exact
+</code></pre></figure>
+<p>The compiler check can accept this function: a runtime argument may be any <code>u8</code>, and some pairs fit. Under Cargo's ordinary development/test settings, the 255-plus-1 call triggers an overflow panic at the addition. Under the default release settings, overflow checking is disabled; the eight-bit addition wraps to zero, and the later widening produces zero as <code>u16</code>. The equality assertion still executes and rejects zero instead of 256. Cargo's <a href="https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks">profile settings</a> and Rust's <a href="https://doc.rust-lang.org/reference/expressions/operator-expr.html#overflow">overflow rules</a> explain the distinction. Configuration overrides can enable overflow checks in release too; then that run also panics at the addition.</p>
+<p>For the default unchecked case, the mistaken operation computes:</p>
+<div class="math-input" data-display="true">(255+1) \bmod 256 = 0,</div>
+<p>where <span class="math-input" data-display="false">\bmod 256</span> means taking the remainder after division by 256. Converting that zero cannot reconstruct the lost carry. With 255 and 255, the narrow result would be 254 rather than 510. Neither value satisfies this function's exact-sum contract.</p>
+<p>A source expression containing only overflowing constants may instead be rejected during compilation. That does not contradict the runtime experiment, whose addition operates on function parameters. Also, Rust's fixed-width arithmetic should not be read as C's integer-promotion rules, and it is not Python's arbitrary-precision integer arithmetic.</p>
+<p>Restore <code>u16::from(left) + u16::from(right)</code> as the function body. Do not weaken the assertions, use saturating arithmetic, or intentionally wrap the sum. Those choices would implement different contracts. Rerun the normal suite and then <code>cargo test -p language-lab --release</code>; the correct function's results do not depend on the overflow-check setting.</p>
+<h2 id="diagnose-the-symptom-at-the-correct-layer">Diagnose the symptom at the correct layer</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>Focused correction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rustc</code> or <code>cargo</code> is not found</td>
+<td>Installation is missing or its executable directory is not on <code>PATH</code>.</td>
+<td>Inspect the installation and reopen the shell after following its setup instructions.</td>
+</tr>
+<tr>
+<td>Edition 2024 or resolver 3 is rejected</td>
+<td>The selected Cargo/toolchain is too old for these manifests.</td>
+<td>Check <code>cargo --version</code> and the active toolchain; choose a compatible maintained installation.</td>
+</tr>
+<tr>
+<td>A check passes but linking fails</td>
+<td>The compiler check did not need a final native executable.</td>
+<td>Inspect the linker error and Apple tool selection; do not rewrite correct byte-processing code.</td>
+</tr>
+<tr>
+<td>No binary target is available for <code>cargo run</code></td>
+<td>The executable lives under <code>examples/</code>, not <code>src/main.rs</code>.</td>
+<td>Use <code>--example workspace_probe</code>.</td>
+</tr>
+<tr>
+<td>Missing module or unresolved import</td>
+<td>A declaration, filename, or crate-root path disagrees.</td>
+<td>Compare <code>lib.rs</code>, <code>byte_summary.rs</code>, and the library-name import separately.</td>
+</tr>
+<tr>
+<td>Function returns <code>()</code> instead of a tuple</td>
+<td>A semicolon discarded the final tuple.</td>
+<td>Restore the tail expression or use an explicit <code>return</code>.</td>
+</tr>
+<tr>
+<td>Empty input panics</td>
+<td>The loop indexes before checking length, or subtracts one from an empty length.</td>
+<td>Keep the loop guard as <code>index &lt; bytes.len()</code>.</td>
+</tr>
+<tr>
+<td><code>[128]</code> has no high byte</td>
+<td>The threshold is <code>&gt; 128</code> rather than <code>&gt;= 128</code>.</td>
+<td>Include the boundary value, then rerun the singleton test.</td>
+</tr>
+<tr>
+<td>Final byte is absent from the counts</td>
+<td>The loop stops at <code>len - 1</code>.</td>
+<td>Process indexes strictly below <code>len</code>, including <code>len - 1</code> when nonempty.</td>
+</tr>
+<tr>
+<td>A sum panics in development or is wrong in release</td>
+<td>Addition happened before widening.</td>
+<td>Convert both inputs first; keep the 256 and 510 expectations.</td>
+</tr>
+</tbody>
+</table>
+<p>These are local experiments, not reasons to delete a build directory, reinstall every tool, or alter unrelated code. Start with the first meaningful diagnostic and the smallest command that reproduces it.</p>
+<h2 id="leave-a-working-foundation-for-chapter-2">Leave a working foundation for Chapter 2</h2>
+<p>Restore both production functions and every original expected value after the diagnostic experiments. The workspace should contain the two manifests, the library root, the completed <code>byte_summary.rs</code> with six tests, and the executable example. Cargo owns its generated lockfile and build output. There are no broker modules or hidden helper files.</p>
+<p>As a small variation, predict the summary when the fixture's 127 becomes 128. Length stays six, zeros stay two, and high bytes increase to three. Verify the prediction by adding this assertion inside the existing <code>counts_mixed_fixture</code> test; it needs no new helper:</p>
+<figure class="code-block"><figcaption><span class="code-title">Optional extra assertion — inside counts_mixed_fixture</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="o">&amp;</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="sc">b'A'</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">]),</span><span class="w"> </span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">));</span>
+</code></pre></figure>
+<p>The number of test functions remains six. The original fixture and executable output need not change. This variation checks the meaning of one threshold rather than merely rerunning the same input.</p>
+<p>The final runnable check is:</p>
+<figure class="code-block"><figcaption><span class="code-title">Terminal — final Chapter 1 checks</span><button type="button" class="copy-code" aria-label="Copy code">Copy</button></figcaption><pre><code>cargo<span class="w"> </span>fmt<span class="w"> </span>--all<span class="w"> </span>--<span class="w"> </span>--check
+cargo<span class="w"> </span>check<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--all-targets
+cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-p<span class="w"> </span>language-lab
+cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--release
+cargo<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span>language-lab<span class="w"> </span>--example<span class="w"> </span>workspace_probe
+</code></pre></figure>
+<p>Expect six passing unit tests in both test profiles and the four program lines shown earlier. Do not record these as executed until they have actually run on the local machine.</p>
+<p>A file-for-file reference copy of the required listings is available with the book: <a href="https://25d-228.github.io/rust-learning/media/chapter-01/Cargo.toml">workspace manifest</a>, <a href="https://25d-228.github.io/rust-learning/media/chapter-01/crates/language-lab/Cargo.toml">package manifest</a>, <a href="https://25d-228.github.io/rust-learning/media/chapter-01/crates/language-lab/src/lib.rs">library root</a>, <a href="https://25d-228.github.io/rust-learning/media/chapter-01/crates/language-lab/src/byte_summary.rs">byte functions and tests</a>, and <a href="https://25d-228.github.io/rust-learning/media/chapter-01/crates/language-lab/examples/workspace_probe.rs">executable</a>. These contain the correct program, not the temporary defects or the optional extra assertion. The complete listings above are sufficient to write it without downloading those files.</p>
+<p>Chapter 2 starts from this workspace and keeps this example working. It adds an owned record and a borrowed view, making the ownership and lifetime relationships explicit before a parser, storage file, or asynchronous task depends on them. See the <a href="https://25d-228.github.io/rust-learning/index.html#chapter-2-ownership-borrowing-and-lifetime-bound-views">course roadmap</a> for that next capability.</p>
+</article>
+<nav class="pager" aria-label="Previous and next chapters"><a href="index.html"><small>Previous · Roadmap</small><span>A Durable Partitioned Event Broker</span></a><a href="chapter-02.html"><small>Next · Chapter 2</small><span>Ownership, borrowing, and lifetime-bound views</span></a></nav>
+<footer>Rust Systems Engineering · Chapter 1</footer>
+</main>
+<aside class="page-toc" aria-label="In this chapter"><div class="toc-title">In this chapter</div><ul><li class="toc-h2"><a href="#observe-the-native-toolchain">Observe the native toolchain</a></li><li class="toc-h2"><a href="#give-the-code-one-workspace-and-two-targets">Give the code one workspace and two targets</a></li><li class="toc-h2"><a href="#declare-a-module-before-importing-its-functions">Declare a module before importing its functions</a></li><li class="toc-h2"><a href="#read-the-function-signature-before-writing-the-loop">Read the function signature before writing the loop</a></li><li class="toc-h3"><a href="#trace-the-six-bytes-including-the-last-one">Trace the six bytes, including the last one</a></li><li class="toc-h2"><a href="#widen-the-operands-not-just-the-destination">Widen the operands, not just the destination</a></li><li class="toc-h2"><a href="#call-the-library-from-an-executable">Call the library from an executable</a></li><li class="toc-h2"><a href="#make-boundaries-repeatable-with-unit-tests">Make boundaries repeatable with unit tests</a></li><li class="toc-h2"><a href="#know-what-each-development-command-establishes">Know what each development command establishes</a></li><li class="toc-h2"><a href="#learn-three-different-diagnostics">Learn three different diagnostics</a></li><li class="toc-h3"><a href="#a-path-can-name-the-wrong-crate">A path can name the wrong crate</a></li><li class="toc-h3"><a href="#an-incorrect-expectation-still-type-checks">An incorrect expectation still type-checks</a></li><li class="toc-h3"><a href="#a-wide-return-type-cannot-rescue-narrow-arithmetic">A wide return type cannot rescue narrow arithmetic</a></li><li class="toc-h2"><a href="#diagnose-the-symptom-at-the-correct-layer">Diagnose the symptom at the correct layer</a></li><li class="toc-h2"><a href="#leave-a-working-foundation-for-chapter-2">Leave a working foundation for Chapter 2</a></li></ul></aside>
+</div></body></html>

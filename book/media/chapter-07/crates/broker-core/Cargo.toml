@@ -1,0 +1,12 @@
+[package]
+name = "broker-core"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+
+[dependencies]
+crc32fast = "1"
+
+[[bin]]
+name = "directory-probe"
+path = "src/bin/directory_probe.rs"

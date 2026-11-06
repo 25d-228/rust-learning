@@ -1,0 +1,8 @@
+[package]
+name = "language-lab"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dev-dependencies]
+tokio = { version = "1", default-features = false, features = ["rt", "macros", "sync", "time"] }

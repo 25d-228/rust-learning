@@ -1,0 +1,12 @@
+[package]
+name = "broker-app"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+
+[dependencies]
+broker-core = { path = "../broker-core" }
+tokio = { version = "1", default-features = false, features = ["rt", "macros", "sync", "time", "net", "io-util", "signal"] }
+
+[dev-dependencies]
+tokio = { version = "1", default-features = false, features = ["test-util"] }
