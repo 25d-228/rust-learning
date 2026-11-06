@@ -1,0 +1,5 @@
+# Local build/editor state only; application-specific ignores can be added on work branches.
+.DS_Store
+.venv/
+__pycache__/
+*.pyc
